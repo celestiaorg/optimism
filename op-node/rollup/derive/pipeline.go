@@ -136,6 +136,7 @@ func (dp *DerivationPipeline) AddUnsafePayload(payload *eth.ExecutionPayload) {
 // An error is expected when the underlying source closes.
 // When Step returns nil, it should be called again, to continue the derivation process.
 func (dp *DerivationPipeline) Step(ctx context.Context) error {
+	// dp.log.Info("Step", "dp", dp)
 	// if any stages need to be reset, do that first.
 	if dp.resetting < len(dp.stages) {
 		if err := dp.stages[dp.resetting].ResetStep(ctx, dp.l1Fetcher); err == io.EOF {

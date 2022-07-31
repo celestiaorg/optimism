@@ -34,9 +34,12 @@ task('accounts', 'Prints the list of accounts', async (_, hre) => {
 const config: HardhatUserConfig = {
   networks: {
     devnetL1: {
+      // url: 'http://localhost:8082',
       url: 'http://localhost:8545',
       accounts: [
-        'ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
+        'A8F5BC22CB33C0CBA99A032355EF9FEE91DAD0F2BF6ECB1841EED6BC4D828960',
+        // 'e7fd96cc7c23bc1f1c4b9e131ea254028cc212118ea927751eb7b29e441d5024',
+        // 'ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80',
       ],
     },
     goerli: {

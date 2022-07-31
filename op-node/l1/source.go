@@ -157,6 +157,9 @@ func (s *Source) headerCall(ctx context.Context, method string, id interface{}) 
 	if header == nil {
 		return nil, ethereum.NotFound
 	}
+	// headerJson, _ := json.MarshalIndent(header.header, "", "  ")
+	// fmt.Println("header.header")
+	// fmt.Println(string(headerJson))
 	info, err := header.Info(s.trustRPC)
 	if err != nil {
 		return nil, err

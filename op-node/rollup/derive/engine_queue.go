@@ -262,6 +262,7 @@ func (eq *EngineQueue) forceNextSafeAttributes(ctx context.Context) error {
 // ResetStep Walks the L2 chain backwards until it finds an L2 block whose L1 origin is canonical.
 // The unsafe head is set to the head of the L2 chain, unless the existing safe head is not canonical.
 func (eq *EngineQueue) ResetStep(ctx context.Context, l1Fetcher L1Fetcher) error {
+	// eq.log.Info("ResetStep", "eq", eq)
 	if !eq.resetting {
 		eq.resetting = true
 
@@ -270,6 +271,7 @@ func (eq *EngineQueue) ResetStep(ctx context.Context, l1Fetcher L1Fetcher) error
 			eq.log.Error("failed to get L2 engine head to start finding reset point from", "err", err)
 			return nil
 		}
+		eq.log.Info("reset head", "head", head)
 		eq.unsafeHead = head
 
 		// TODO: this should be different for safe head.
@@ -278,6 +280,8 @@ func (eq *EngineQueue) ResetStep(ctx context.Context, l1Fetcher L1Fetcher) error
 		eq.safeHead = head
 		return nil
 	}
+	eq.log.Info("eq.safeHead.L1Origin", "safeHead.L1Origin", eq.safeHead.L1Origin)
+	eq.log.Info("eq.unsafeHead.L1Origin", "unsafeHead.L1Origin", eq.unsafeHead.L1Origin)
 
 	// check if the block origin is canonical
 	if canonicalRef, err := l1Fetcher.L1BlockRefByNumber(ctx, eq.safeHead.L1Origin.Number); errors.Is(err, ethereum.NotFound) {
@@ -286,11 +290,15 @@ func (eq *EngineQueue) ResetStep(ctx context.Context, l1Fetcher L1Fetcher) error
 	} else if err != nil {
 		eq.log.Warn("failed to get L1 block ref to check if origin of l2 block is canonical", "err", err, "num", eq.safeHead.L1Origin.Number)
 	} else {
+		eq.log.Info("canonicalRef", "canonicalRef", canonicalRef)
 		// if we find the safe head, then we found the canon chain
 		if canonicalRef.Hash == eq.safeHead.L1Origin.Hash {
+			eq.log.Info("hash match")
+
 			eq.resetting = false
 			// if the unsafe head was broken, then restore it to start from the safe head
 			if eq.unsafeHead == (eth.L2BlockRef{}) {
+				eq.log.Info("broken unsafeHead")
 				eq.unsafeHead = eq.safeHead
 			}
 			eq.progress = Progress{
@@ -299,6 +307,7 @@ func (eq *EngineQueue) ResetStep(ctx context.Context, l1Fetcher L1Fetcher) error
 			}
 			return io.EOF
 		} else {
+			eq.log.Info("safe head not canonical")
 			// if the safe head is not canonical, then the unsafe head will not be either
 			eq.unsafeHead = eth.L2BlockRef{}
 		}

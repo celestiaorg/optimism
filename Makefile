@@ -60,14 +60,12 @@ devnet-up:
 .PHONY: devnet-up
 
 devnet-down:
-	@(cd ./ops-bedrock && GENESIS_TIMESTAMP=$(shell date +%s) docker-compose stop)
+	@(cd ./ops-bedrock && GENESIS_TIMESTAMP=$(shell date +%s) docker compose down)
 .PHONY: devnet-down
 
 devnet-clean:
-	rm -rf ./packages/contracts-bedrock/deployments/devnetL1
 	rm -rf ./.devnet
-	cd ./ops-bedrock && docker-compose down
-	docker image ls 'ops-bedrock*' --format='{{.Repository}}' | xargs -r docker rmi
+	cd ./ops-bedrock && docker compose down
 	docker volume ls --filter name=ops-bedrock --format='{{.Name}}' | xargs -r docker volume rm
 .PHONY: devnet-clean
 

@@ -76,13 +76,13 @@ if [ ! -f ./.devnet/genesis-l1.json ]; then
 fi
 
 # Bring up L1.
-(
-  cd ops-bedrock
-  echo "Bringing up L1..."
-  DOCKER_BUILDKIT=1 docker-compose build
-  docker-compose up -d l1
-  wait_up $L1_URL
-)
+# (
+#   cd ops-bedrock
+#   echo "Bringing up L1..."
+#   DOCKER_BUILDKIT=1 docker compose build
+#   docker compose up -d l1
+#   wait_up $L1_URL
+# )
 
 # Deploy contracts using Hardhat.
 if [ ! -d $CONTRACTS_BEDROCK/deployments/$NETWORK ]; then
@@ -111,7 +111,7 @@ fi
 (
   cd ops-bedrock
   echo "Bringing up L2..."
-  docker-compose up -d l2
+  docker compose up -d l2
   wait_up $L2_URL
 )
 
@@ -138,10 +138,10 @@ SEQUENCER_BATCH_INBOX_ADDRESS="$(cat ./.devnet/rollup.json | jq -r '.batch_inbox
   L2OO_ADDRESS="$L2OO_ADDRESS" \
       SEQUENCER_GENESIS_HASH="$SEQUENCER_GENESIS_HASH" \
       SEQUENCER_BATCH_INBOX_ADDRESS="$SEQUENCER_BATCH_INBOX_ADDRESS" \
-      docker-compose up -d op-proposer op-batcher
+      docker compose up -d op-proposer op-batcher
 
   echo "Bringin up stateviz webserver..."
-  docker-compose up -d stateviz
+  docker compose up -d stateviz
 )
 
 echo "Devnet ready."

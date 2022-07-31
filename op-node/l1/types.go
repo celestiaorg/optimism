@@ -91,6 +91,8 @@ type rpcHeader struct {
 }
 
 func (header *rpcHeader) UnmarshalJSON(msg []byte) error {
+	fmt.Println("msg")
+	fmt.Println(string(msg))
 	if err := json.Unmarshal(msg, &header.header); err != nil {
 		return err
 	}
@@ -109,6 +111,12 @@ func (header *rpcHeader) Info(trustCache bool) (*HeaderInfo, error) {
 		txHash:      header.header.TxHash,
 		receiptHash: header.header.ReceiptHash,
 	}
+	headerCacheJson, _ := json.MarshalIndent(header.cache, "", "  ")
+	fmt.Println("header.cache")
+	fmt.Println(string(headerCacheJson))
+	headerJson, _ := json.MarshalIndent(header.header, "", "  ")
+	fmt.Println("header.header")
+	fmt.Println(string(headerJson))
 	if !trustCache {
 		if computed := header.header.Hash(); computed != info.hash {
 			return nil, fmt.Errorf("failed to verify block hash: computed %s but RPC said %s", computed, info.hash)

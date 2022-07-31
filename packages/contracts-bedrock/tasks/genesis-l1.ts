@@ -67,7 +67,7 @@ task('genesis-l1', 'create a genesis config')
 
     const genesis: Genesis = {
       config: {
-        chainId: 900,
+        chainId: 9000,
         homesteadBlock: 0,
         eip150Block: 0,
         eip150Hash:
