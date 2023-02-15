@@ -15,6 +15,7 @@ import (
 	"github.com/ethereum-optimism/optimism/op-node/eth"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/sync"
+	"github.com/ethereum-optimism/optimism/op-node/sources"
 )
 
 type NextAttributesProvider interface {
@@ -341,7 +342,7 @@ func (eq *EngineQueue) tryNextUnsafePayload(ctx context.Context) error {
 		return io.EOF // time to go to next stage if we cannot process the first unsafe payload
 	}
 
-	ref, err := PayloadToBlockRef(first, &eq.cfg.Genesis)
+	ref, err := sources.PayloadToBlockRef(first, &eq.cfg.Genesis)
 	if err != nil {
 		eq.log.Error("failed to decode L2 block ref from payload", "err", err)
 		eq.unsafePayloads.Pop()
@@ -427,7 +428,7 @@ func (eq *EngineQueue) consolidateNextSafeAttributes(ctx context.Context) error 
 		// geth cannot wind back a chain without reorging to a new, previously non-canonical, block
 		return eq.forceNextSafeAttributes(ctx)
 	}
-	ref, err := PayloadToBlockRef(payload, &eq.cfg.Genesis)
+	ref, err := sources.PayloadToBlockRef(payload, &eq.cfg.Genesis)
 	if err != nil {
 		return NewResetError(fmt.Errorf("failed to decode L2 block ref from payload: %w", err))
 	}
@@ -517,7 +518,7 @@ func (eq *EngineQueue) ConfirmPayload(ctx context.Context) (out *eth.ExecutionPa
 		return nil, BlockInsertPrestateErr, fmt.Errorf("cannot complete payload building: not currently building a payload")
 	}
 	if eq.buildingOnto.Hash != eq.unsafeHead.Hash { // E.g. when safe-attributes consolidation fails, it will drop the existing work.
-		eq.log.Warn("engine is building block that reorgs previous unsafe head", "onto", eq.buildingOnto, "unsafe", eq.unsafeHead)
+		eq.log.Warn("engine is building block that reorgs previous usafe head", "onto", eq.buildingOnto, "unsafe", eq.unsafeHead)
 	}
 	fc := eth.ForkchoiceState{
 		HeadBlockHash:      common.Hash{}, // gets overridden
@@ -528,7 +529,7 @@ func (eq *EngineQueue) ConfirmPayload(ctx context.Context) (out *eth.ExecutionPa
 	if err != nil {
 		return nil, errTyp, fmt.Errorf("failed to complete building on top of L2 chain %s, id: %s, error (%d): %w", eq.buildingOnto, eq.buildingID, errTyp, err)
 	}
-	ref, err := PayloadToBlockRef(payload, &eq.cfg.Genesis)
+	ref, err := sources.PayloadToBlockRef(payload, &eq.cfg.Genesis)
 	if err != nil {
 		return nil, BlockInsertPayloadErr, NewResetError(fmt.Errorf("failed to decode L2 block ref from payload: %w", err))
 	}

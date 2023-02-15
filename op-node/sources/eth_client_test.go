@@ -3,7 +3,6 @@ package sources
 import (
 	"context"
 	"math/big"
-	"math/rand"
 	"testing"
 
 	"github.com/ethereum/go-ethereum"
@@ -55,11 +54,6 @@ var testEthClientConfig = &EthClientConfig{
 	RPCProviderKind:       RPCKindBasic,
 }
 
-func randHash() (out common.Hash) {
-	rand.Read(out[:])
-	return out
-}
-
 func randHeader() (*types.Header, *rpcHeader) {
 	hdr := &types.Header{
 		ParentHash:  randHash(),
@@ -101,6 +95,50 @@ func randHeader() (*types.Header, *rpcHeader) {
 	return hdr, rhdr
 }
 
+func randBlock() (*types.Header, *RpcBlock) {
+	hdr := &types.Header{
+		ParentHash:  randHash(),
+		UncleHash:   randHash(),
+		Coinbase:    common.Address{},
+		Root:        randHash(),
+		TxHash:      randHash(),
+		ReceiptHash: randHash(),
+		Bloom:       types.Bloom{},
+		Difficulty:  big.NewInt(42),
+		Number:      big.NewInt(1234),
+		GasLimit:    0,
+		GasUsed:     0,
+		Time:        123456,
+		Extra:       make([]byte, 0),
+		MixDigest:   randHash(),
+		Nonce:       types.BlockNonce{},
+		BaseFee:     big.NewInt(100),
+	}
+	block := &RpcBlock{
+		rpcHeader: rpcHeader{
+			ParentHash:  hdr.ParentHash,
+			UncleHash:   hdr.UncleHash,
+			Coinbase:    hdr.Coinbase,
+			Root:        hdr.Root,
+			TxHash:      hdr.TxHash,
+			ReceiptHash: hdr.ReceiptHash,
+			Bloom:       eth.Bytes256(hdr.Bloom),
+			Difficulty:  *(*hexutil.Big)(hdr.Difficulty),
+			Number:      hexutil.Uint64(hdr.Number.Uint64()),
+			GasLimit:    hexutil.Uint64(hdr.GasLimit),
+			GasUsed:     hexutil.Uint64(hdr.GasUsed),
+			Time:        hexutil.Uint64(hdr.Time),
+			Extra:       hdr.Extra,
+			MixDigest:   hdr.MixDigest,
+			Nonce:       hdr.Nonce,
+			BaseFee:     (*hexutil.Big)(hdr.BaseFee),
+			Hash:        hdr.Hash(),
+		},
+		Transactions: []*types.Transaction{},
+	}
+	return hdr, block
+}
+
 func TestEthClient_InfoByHash(t *testing.T) {
 	m := new(mockRPC)
 	_, rhdr := randHeader()
@@ -123,19 +161,19 @@ func TestEthClient_InfoByHash(t *testing.T) {
 	m.Mock.AssertExpectations(t)
 }
 
-func TestEthClient_InfoByNumber(t *testing.T) {
+func TestEthClient_InfoAndTxsByNumber(t *testing.T) {
 	m := new(mockRPC)
-	_, rhdr := randHeader()
-	expectedInfo, _ := rhdr.Info(true, false)
-	n := rhdr.Number
+	_, block := randBlock()
+	expectedInfo, _, _ := block.Info(true, false)
+	n := block.Number
 	ctx := context.Background()
-	m.On("CallContext", ctx, new(*rpcHeader),
-		"eth_getBlockByNumber", []any{n.String(), false}).Run(func(args mock.Arguments) {
-		*args[1].(**rpcHeader) = rhdr
+	m.On("CallContext", ctx, new(*RpcBlock),
+		"eth_getBlockByNumber", []any{n.String(), true}).Run(func(args mock.Arguments) {
+		*args[1].(**RpcBlock) = block
 	}).Return([]error{nil})
 	s, err := NewL1Client(m, nil, nil, L1ClientDefaultConfig(&rollup.Config{SeqWindowSize: 10}, true, RPCKindBasic))
 	require.NoError(t, err)
-	info, err := s.InfoByNumber(ctx, uint64(n))
+	info, _, err := s.InfoAndTxsByNumber(ctx, uint64(n))
 	require.NoError(t, err)
 	require.Equal(t, info, expectedInfo)
 	m.Mock.AssertExpectations(t)

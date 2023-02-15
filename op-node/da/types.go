@@ -1,9 +1,11 @@
-package sources
+package da
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"fmt"
 	"math/big"
+	"math/rand"
 	"strings"
 
 	"github.com/holiman/uint256"
@@ -88,6 +90,14 @@ func (info *HeaderInfo) ID() eth.BlockID {
 
 func (info *HeaderInfo) ReceiptHash() common.Hash {
 	return info.receiptHash
+}
+
+type testTx struct {
+	to      *common.Address
+	dataLen int
+	author  *ecdsa.PrivateKey
+	good    bool
+	value   int
 }
 
 type rpcHeader struct {
@@ -186,12 +196,12 @@ func (hdr *rpcHeader) Info(trustCache bool, mustBePostMerge bool) (*HeaderInfo, 
 	return &info, nil
 }
 
-type RpcBlock struct {
+type rpcBlock struct {
 	rpcHeader
 	Transactions []*types.Transaction `json:"transactions"`
 }
 
-func (block *RpcBlock) verify() error {
+func (block *rpcBlock) verify() error {
 	if computed := block.computeBlockHash(); computed != block.Hash {
 		return fmt.Errorf("failed to verify block hash: computed %s but RPC said %s", computed, block.Hash)
 	}
@@ -201,7 +211,7 @@ func (block *RpcBlock) verify() error {
 	return nil
 }
 
-func (block *RpcBlock) Info(trustCache bool, mustBePostMerge bool) (*HeaderInfo, types.Transactions, error) {
+func (block *rpcBlock) Info(trustCache bool, mustBePostMerge bool) (*HeaderInfo, types.Transactions, error) {
 	if mustBePostMerge {
 		if err := block.checkPostMerge(); err != nil {
 			return nil, nil, err
@@ -222,7 +232,7 @@ func (block *RpcBlock) Info(trustCache bool, mustBePostMerge bool) (*HeaderInfo,
 	return info, block.Transactions, nil
 }
 
-func (block *RpcBlock) ExecutionPayload(trustCache bool) (*eth.ExecutionPayload, error) {
+func (block *rpcBlock) ExecutionPayload(trustCache bool) (*eth.ExecutionPayload, error) {
 	if err := block.checkPostMerge(); err != nil {
 		return nil, err
 	}
@@ -285,4 +295,54 @@ func unusableMethod(err error) bool {
 		}
 	}
 	return false
+}
+func randHash() (out common.Hash) {
+	rand.Read(out[:])
+	return out
+}
+func RandBlock() *rpcBlock {
+	hdr := &types.Header{
+		ParentHash:  randHash(),
+		UncleHash:   randHash(),
+		Coinbase:    common.Address{},
+		Root:        randHash(),
+		TxHash:      randHash(),
+		ReceiptHash: randHash(),
+		Bloom:       types.Bloom{},
+		Difficulty:  big.NewInt(42),
+		Number:      big.NewInt(1234),
+		GasLimit:    0,
+		GasUsed:     0,
+		Time:        123456,
+		Extra:       make([]byte, 0),
+		MixDigest:   randHash(),
+		Nonce:       types.BlockNonce{},
+		BaseFee:     big.NewInt(100),
+	}
+	block := &rpcBlock{
+		rpcHeader: rpcHeader{
+			ParentHash:  hdr.ParentHash,
+			UncleHash:   hdr.UncleHash,
+			Coinbase:    hdr.Coinbase,
+			Root:        hdr.Root,
+			TxHash:      hdr.TxHash,
+			ReceiptHash: hdr.ReceiptHash,
+			Bloom:       eth.Bytes256(hdr.Bloom),
+			Difficulty:  *(*hexutil.Big)(hdr.Difficulty),
+			Number:      hexutil.Uint64(hdr.Number.Uint64()),
+			GasLimit:    hexutil.Uint64(hdr.GasLimit),
+			GasUsed:     hexutil.Uint64(hdr.GasUsed),
+			Time:        hexutil.Uint64(hdr.Time),
+			Extra:       hdr.Extra,
+			MixDigest:   hdr.MixDigest,
+			Nonce:       hdr.Nonce,
+			BaseFee:     (*hexutil.Big)(hdr.BaseFee),
+			Hash:        hdr.Hash(),
+		},
+		Transactions: []*types.Transaction{},
+	}
+	return block
+}
+func (block *rpcBlock) WriteTransactions(txs []*types.Transaction) {
+	block.Transactions = txs
 }

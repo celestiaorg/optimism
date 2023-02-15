@@ -183,7 +183,7 @@ func (s *EthClient) headerCall(ctx context.Context, method string, id any) (*Hea
 }
 
 func (s *EthClient) blockCall(ctx context.Context, method string, id any) (*HeaderInfo, types.Transactions, error) {
-	var block *rpcBlock
+	var block *RpcBlock
 	err := s.client.CallContext(ctx, &block, method, id, true)
 	if err != nil {
 		return nil, nil, err
@@ -201,7 +201,7 @@ func (s *EthClient) blockCall(ctx context.Context, method string, id any) (*Head
 }
 
 func (s *EthClient) payloadCall(ctx context.Context, method string, id any) (*eth.ExecutionPayload, error) {
-	var block *rpcBlock
+	var block *RpcBlock
 	err := s.client.CallContext(ctx, &block, method, id, true)
 	if err != nil {
 		return nil, err
@@ -256,6 +256,12 @@ func (s *EthClient) InfoAndTxsByHash(ctx context.Context, hash common.Hash) (eth
 func (s *EthClient) InfoAndTxsByNumber(ctx context.Context, number uint64) (eth.BlockInfo, types.Transactions, error) {
 	// can't hit the cache when querying by number due to reorgs.
 	return s.blockCall(ctx, "eth_getBlockByNumber", hexutil.EncodeUint64(number))
+}
+
+func (s *EthClient) TxsByNumber(ctx context.Context, number uint64) (types.Transactions, error) {
+	// TODO: caching
+	_, txs, err := s.InfoAndTxsByNumber(ctx, number)
+	return txs, err
 }
 
 func (s *EthClient) InfoAndTxsByLabel(ctx context.Context, label eth.BlockLabel) (eth.BlockInfo, types.Transactions, error) {
@@ -359,8 +365,7 @@ func (s *EthClient) ReadStorageAt(ctx context.Context, address common.Address, s
 	if err := result.Verify(block.Root()); err != nil {
 		return common.Hash{}, fmt.Errorf("failed to verify retrieved proof against state root: %w", err)
 	}
-	value := result.StorageProof[0].Value.ToInt()
-	return common.BytesToHash(value.Bytes()), nil
+	return common.BytesToHash(result.StorageProof[0].Value), nil
 }
 
 func (s *EthClient) Close() {

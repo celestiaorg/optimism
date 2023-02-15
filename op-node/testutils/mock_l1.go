@@ -5,6 +5,7 @@ import (
 
 	"github.com/ethereum-optimism/optimism/op-node/eth"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 type MockL1Source struct {
@@ -36,4 +37,13 @@ func (m *MockL1Source) L1BlockRefByHash(ctx context.Context, hash common.Hash) (
 
 func (m *MockL1Source) ExpectL1BlockRefByHash(hash common.Hash, ref eth.L1BlockRef, err error) {
 	m.Mock.On("L1BlockRefByHash", hash).Once().Return(ref, &err)
+}
+
+func (m *MockL1Source) TxsByNumber(ctx context.Context, number uint64) (types.Transactions, error) {
+	out := m.Mock.MethodCalled("TxsByNumber", number)
+	return out[0].(types.Transactions), *out[1].(*error)
+}
+
+func (m *MockL1Source) ExpectTxsByNumber(number uint64, txs types.Transactions, err error) {
+	m.Mock.On("TxsByNumber", number).Once().Return(txs, &err)
 }
