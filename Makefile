@@ -59,10 +59,16 @@ nuke: clean devnet-clean
 
 devnet-up:
 	@bash ./ops-bedrock/devnet-up.sh
+	# TODO: skip after first deploy
+	docker exec --user bitcoin ops-bedrock-op-bitcoin-1 bitcoin-cli -regtest -rpcport=18332 -rpcuser=rpcuser -rpcpassword=rpcpass createwallet w1
+	docker exec --user bitcoin ops-bedrock-op-bitcoin-1 bitcoin-cli -regtest -rpcport=18332 -rpcuser=rpcuser -rpcpassword=rpcpass generatetoaddress 101 `docker exec --user bitcoin ops-bedrock-op-bitcoin-1 bitcoin-cli -regtest -rpcport=18332 -rpcuser=rpcuser -rpcpassword=rpcpass getnewaddress`
 .PHONY: devnet-up
 
 devnet-up-deploy:
 	PYTHONPATH=./bedrock-devnet python3 ./bedrock-devnet/main.py --monorepo-dir=.
+	# TODO: skip after first deploy
+	docker exec --user bitcoin ops-bedrock-op-bitcoin-1 bitcoin-cli -regtest -rpcport=18332 -rpcuser=rpcuser -rpcpassword=rpcpass createwallet w1
+	docker exec --user bitcoin ops-bedrock-op-bitcoin-1 bitcoin-cli -regtest -rpcport=18332 -rpcuser=rpcuser -rpcpassword=rpcpass generatetoaddress 101 `docker exec --user bitcoin ops-bedrock-op-bitcoin-1 bitcoin-cli -regtest -rpcport=18332 -rpcuser=rpcuser -rpcpassword=rpcpass getnewaddress`
 .PHONY: devnet-up-deploy
 
 devnet-down:

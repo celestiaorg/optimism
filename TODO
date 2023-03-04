@@ -1,0 +1,7 @@
+TODO:
+
+
+* make op-bitcoin start wallet + background miner
+* double check SendTransaction
+* double check DataFromEVMTransactions
+* integration test everything

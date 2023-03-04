@@ -1,11 +1,14 @@
 package batcher
 
 import (
+	"bytes"
 	"context"
+	"encoding/binary"
 	"fmt"
 	"math/big"
 	"time"
 
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/ethereum-optimism/optimism/op-service/txmgr"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -13,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
+	bitcoinda "github.com/rollkit/bitcoin-da"
 
 	opcrypto "github.com/ethereum-optimism/optimism/op-service/crypto"
 )
@@ -28,21 +32,47 @@ type TransactionManager struct {
 	// Outside world
 	txMgr    txmgr.TxManager
 	l1Client *ethclient.Client
+	relayer  *bitcoinda.Relayer
 	signerFn opcrypto.SignerFn
 	log      log.Logger
 }
 
 func NewTransactionManager(log log.Logger, txMgrConfg txmgr.Config, batchInboxAddress common.Address, chainID *big.Int, senderAddress common.Address, l1Client *ethclient.Client) *TransactionManager {
+	relayer, err := bitcoinda.NewRelayer(bitcoinda.Config{
+		Host:         "op-bitcoin:18332",
+		User:         "rpcuser",
+		Pass:         "rpcpass",
+		HTTPPostMode: true,
+		DisableTLS:   true,
+	})
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
 	t := &TransactionManager{
 		batchInboxAddress: batchInboxAddress,
 		senderAddress:     senderAddress,
 		chainID:           chainID,
 		txMgr:             txmgr.NewSimpleTxManager("batcher", log, txMgrConfg, l1Client),
 		l1Client:          l1Client,
+		relayer:           relayer,
 		signerFn:          txMgrConfg.Signer,
 		log:               log,
 	}
 	return t
+}
+
+func (t *TransactionManager) EncodePointer(hash *chainhash.Hash, index uint32) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	err := binary.Write(buf, binary.BigEndian, hash.CloneBytes())
+	if err != nil {
+		return nil, err
+	}
+	err = binary.Write(buf, binary.BigEndian, index)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 // SendTransaction creates & submits a transaction to the batch inbox address with the given `data`.
@@ -50,6 +80,16 @@ func NewTransactionManager(log log.Logger, txMgrConfg txmgr.Config, batchInboxAd
 // This is a blocking method. It should not be called concurrently.
 // TODO: where to put concurrent transaction handling logic.
 func (t *TransactionManager) SendTransaction(ctx context.Context, data []byte) (*types.Receipt, error) {
+	hash, err := t.relayer.Write(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to write data tx: %w", err)
+	}
+	t.log.Warn("data tx successfully published", "tx_hash", hash)
+	data, err = t.EncodePointer(hash, 0)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode pointer: %w", err)
+	}
+	t.log.Warn("data tx pointer serialized", "data", data)
 	tx, err := t.CraftTx(ctx, data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tx: %w", err)

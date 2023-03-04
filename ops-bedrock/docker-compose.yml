@@ -43,6 +43,7 @@ services:
     depends_on:
       - l1
       - l2
+      - op-bitcoin
     build:
       context: ../
       dockerfile: ./op-node/Dockerfile
@@ -152,3 +153,18 @@ services:
       - "9090:8080"
     volumes:
       - op_log:/op_log:ro
+
+  op-bitcoin:
+    image: ruimarinho/bitcoin-core
+    command:
+      -chain=regtest
+      -rpcbind=0.0.0.0
+      -rpcallowip=0.0.0.0/0
+      -rpcport=18332
+      -rpcuser=rpcuser
+      -rpcpassword=rpcpass
+      -fallbackfee=0.000001
+      -txindex=1
+    ports:
+      - "18332:18332"
+      - "18333:18333"

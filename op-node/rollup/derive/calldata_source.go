@@ -1,15 +1,19 @@
 package derive
 
 import (
+	"bytes"
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
 
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
+	bitcoinda "github.com/rollkit/bitcoin-da"
 
 	"github.com/ethereum-optimism/optimism/op-node/eth"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
@@ -55,11 +59,22 @@ type DataSource struct {
 	log     log.Logger
 
 	batcherAddr common.Address
+	relayer     *bitcoinda.Relayer
 }
 
 // NewDataSource creates a new calldata source. It suppresses errors in fetching the L1 block if they occur.
 // If there is an error, it will attempt to fetch the result on the next call to `Next`.
 func NewDataSource(ctx context.Context, log log.Logger, cfg *rollup.Config, fetcher L1TransactionFetcher, block eth.BlockID, batcherAddr common.Address) DataIter {
+	relayer, err := bitcoinda.NewRelayer(bitcoinda.Config{
+		Host:         "op-bitcoin:18332",
+		User:         "rpcuser",
+		Pass:         "rpcpass",
+		HTTPPostMode: true,
+		DisableTLS:   true,
+	})
+	if err != nil {
+		fmt.Println(err)
+	}
 	_, txs, err := fetcher.InfoAndTxsByHash(ctx, block.Hash)
 	if err != nil {
 		return &DataSource{
@@ -69,11 +84,12 @@ func NewDataSource(ctx context.Context, log log.Logger, cfg *rollup.Config, fetc
 			fetcher:     fetcher,
 			log:         log,
 			batcherAddr: batcherAddr,
+			relayer:     relayer,
 		}
 	} else {
 		return &DataSource{
 			open: true,
-			data: DataFromEVMTransactions(cfg, batcherAddr, txs, log.New("origin", block)),
+			data: DataFromEVMTransactions(cfg, batcherAddr, relayer, txs, log.New("origin", block)),
 		}
 	}
 }
@@ -85,7 +101,7 @@ func (ds *DataSource) Next(ctx context.Context) (eth.Data, error) {
 	if !ds.open {
 		if _, txs, err := ds.fetcher.InfoAndTxsByHash(ctx, ds.id.Hash); err == nil {
 			ds.open = true
-			ds.data = DataFromEVMTransactions(ds.cfg, ds.batcherAddr, txs, log.New("origin", ds.id))
+			ds.data = DataFromEVMTransactions(ds.cfg, ds.batcherAddr, ds.relayer, txs, log.New("origin", ds.id))
 		} else if errors.Is(err, ethereum.NotFound) {
 			return nil, NewResetError(fmt.Errorf("failed to open calldata source: %w", err))
 		} else {
@@ -101,10 +117,34 @@ func (ds *DataSource) Next(ctx context.Context) (eth.Data, error) {
 	}
 }
 
+// DecodeETHDataPointer returns the height and index of the data pointer from
+// serialized bytes.
+func DecodeETHDataPointer(data []byte, log log.Logger) (*chainhash.Hash, uint32) {
+	log.Warn("decoding data pointer: %x", "data", data)
+	buf := bytes.NewBuffer(data)
+	var hash [32]byte
+	err := binary.Read(buf, binary.BigEndian, &hash)
+	if err != nil {
+		log.Error("reading block hash failed")
+	}
+	log.Warn("decoded hash: %x", "hash", hash)
+	var index uint32
+	err = binary.Read(buf, binary.BigEndian, &index)
+	if err != nil {
+		log.Error("reading tx index failed")
+	}
+	log.Warn("decoded index: %d", "index", index)
+	newHash, err := chainhash.NewHash(hash[:])
+	if err != nil {
+		log.Error("decoding hash failed")
+	}
+	return newHash, index
+}
+
 // DataFromEVMTransactions filters all of the transactions and returns the calldata from transactions
 // that are sent to the batch inbox address from the batch sender address.
 // This will return an empty array if no valid transactions are found.
-func DataFromEVMTransactions(config *rollup.Config, batcherAddr common.Address, txs types.Transactions, log log.Logger) []eth.Data {
+func DataFromEVMTransactions(config *rollup.Config, batcherAddr common.Address, relayer *bitcoinda.Relayer, txs types.Transactions, log log.Logger) []eth.Data {
 	var out []eth.Data
 	l1Signer := config.L1Signer()
 	for j, tx := range txs {
@@ -119,7 +159,26 @@ func DataFromEVMTransactions(config *rollup.Config, batcherAddr common.Address, 
 				log.Warn("tx in inbox with unauthorized submitter", "index", j, "err", err)
 				continue // not an authorized batch submitter, ignore
 			}
-			out = append(out, tx.Data())
+			data := tx.Data()
+			hash, index := DecodeETHDataPointer(data, log)
+			log.Warn("decoded eth data pointer", "hash", hash, "index", index)
+			/*
+				var height int64
+				for i := 0; i < 10; i++ {
+					height, err = relayer.Check(hash)
+					if err != nil {
+						fmt.Printf("%v: retrying in 1s\n", err)
+						time.Sleep(time.Second)
+						continue
+					}
+				}
+			*/
+			data, err = relayer.ReadTransaction(hash)
+			log.Warn("read tx data", "data", data)
+			if err != nil {
+				log.Warn("error reading data from relayer", "err", err)
+			}
+			out = append(out, eth.Data(data))
 		}
 	}
 	return out
