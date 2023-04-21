@@ -43,6 +43,7 @@ import (
 	altda "github.com/ethereum-optimism/optimism/op-alt-da"
 	bss "github.com/ethereum-optimism/optimism/op-batcher/batcher"
 	batcherFlags "github.com/ethereum-optimism/optimism/op-batcher/flags"
+	celestia "github.com/ethereum-optimism/optimism/op-celestia"
 	"github.com/ethereum-optimism/optimism/op-chain-ops/genesis"
 	shared "github.com/ethereum-optimism/optimism/op-devstack/shared/challenger"
 	"github.com/ethereum-optimism/optimism/op-e2e/config"
@@ -160,6 +161,7 @@ func DefaultSystemConfig(t testing.TB, opts ...SystemConfigOpt) SystemConfig {
 				RuntimeConfigReloadInterval: time.Minute * 10,
 				ConfigPersistence:           &config2.DisabledConfigPersistence{},
 				Sync:                        sync.Config{SyncMode: sync.CLSync},
+				DaConfig:                    celestia.ReadCLIConfigFromEnv("OP_E2E"),
 			},
 			RoleVerif: {
 				Driver: driver.Config{
@@ -177,6 +179,7 @@ func DefaultSystemConfig(t testing.TB, opts ...SystemConfigOpt) SystemConfig {
 				RuntimeConfigReloadInterval: time.Minute * 10,
 				ConfigPersistence:           &config2.DisabledConfigPersistence{},
 				Sync:                        sync.Config{SyncMode: sync.CLSync},
+				DaConfig:                    celestia.ReadCLIConfigFromEnv("OP_E2E"),
 			},
 		},
 		Loggers: map[string]log.Logger{
@@ -567,6 +570,14 @@ func WithBatcherCompressionAlgo(ca derive.CompressionAlgo) StartOption {
 	return StartOption{
 		BatcherMod: func(cfg *bss.CLIConfig) {
 			cfg.CompressionAlgo = ca
+		},
+	}
+}
+
+func WithBatcherCelestiaDisabled() StartOption {
+	return StartOption{
+		BatcherMod: func(cfg *bss.CLIConfig) {
+			cfg.DaConfig = celestia.CLIConfig{}
 		},
 	}
 }
@@ -1007,6 +1018,7 @@ func (cfg SystemConfig) Start(t *testing.T, startOpts ...StartOption) (*System, 
 		DataAvailabilityType:  sys.Cfg.DataAvailabilityType,
 		CompressionAlgo:       derive.Zlib,
 		AltDA:                 batcherAltDACLIConfig,
+		DaConfig:              celestia.ReadCLIConfigFromEnv("OP_E2E"),
 	}
 
 	// Apply batcher cli modifications
