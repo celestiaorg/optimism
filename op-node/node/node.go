@@ -147,6 +147,9 @@ func (n *OpNode) init(ctx context.Context, cfg *config.Config) error {
 	if err := n.initL1Handlers(cfg); err != nil {
 		return fmt.Errorf("failed to init L1 Handlers: %w", err)
 	}
+	if err := n.initDA(ctx, cfg); err != nil {
+		return fmt.Errorf("failed to init da: %w", err)
+	}
 	if err := n.initRuntimeConfig(ctx, cfg); err != nil { // depends on L2, to signal initial runtime values to
 		return fmt.Errorf("failed to init the runtime config: %w", err)
 	}
@@ -405,6 +408,10 @@ func (n *OpNode) initL1BeaconAPI(ctx context.Context, cfg *config.Config) error 
 		n.log.Info("Connected to L1 Beacon API, ready for EIP-4844 blobs retrieval.", "version", beaconVersion)
 		return nil
 	}
+}
+
+func (n *OpNode) initDA(ctx context.Context, cfg *config.Config) error {
+	return driver.SetDAClient(cfg.DaConfig)
 }
 
 func (n *OpNode) initL2(ctx context.Context, cfg *config.Config) error {

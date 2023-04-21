@@ -97,6 +97,10 @@ variable "OP_INTEROP_MON_VERSION" {
   default = "${GIT_VERSION}"
 }
 
+variable "OP_CELESTIA_INDEXER_VERSION" {
+  default = "${GIT_VERSION}"
+}
+
 
 target "op-node" {
   dockerfile = "ops/docker/op-stack-go/Dockerfile"
@@ -303,4 +307,16 @@ target "op-interop-mon" {
   target = "op-interop-mon-target"
   platforms = split(",", PLATFORMS)
   tags = [for tag in split(",", IMAGE_TAGS) : "${REGISTRY}/${REPOSITORY}/op-interop-mon:${tag}"]
+}
+
+target "op-celestia-indexer" {
+  dockerfile = "ops/docker/op-stack-go/Dockerfile"
+  context = "."
+  args = {
+    GIT_COMMIT = "${GIT_COMMIT}"
+    GIT_DATE = "${GIT_DATE}"
+    OP_CELESTIA_INDEXER_VERSION = "${OP_CELESTIA_INDEXER_VERSION}"
+  }
+  platforms = split(",", PLATFORMS)
+  tags = [for tag in split(",", IMAGE_TAGS) : "${REGISTRY}/${REPOSITORY}/op-celestia-indexer:${tag}"]
 }
