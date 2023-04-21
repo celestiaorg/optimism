@@ -41,6 +41,7 @@ import (
 
 	bss "github.com/ethereum-optimism/optimism/op-batcher/batcher"
 	batcherFlags "github.com/ethereum-optimism/optimism/op-batcher/flags"
+	celestia "github.com/ethereum-optimism/optimism/op-celestia"
 	"github.com/ethereum-optimism/optimism/op-chain-ops/genesis"
 	"github.com/ethereum-optimism/optimism/op-e2e/config"
 	"github.com/ethereum-optimism/optimism/op-e2e/e2eutils"
@@ -143,6 +144,7 @@ func DefaultSystemConfig(t testing.TB) SystemConfig {
 				RuntimeConfigReloadInterval: time.Minute * 10,
 				ConfigPersistence:           &rollupNode.DisabledConfigPersistence{},
 				Sync:                        sync.Config{SyncMode: sync.CLSync},
+				DaConfig:                    celestia.Config{DaRpc: "localhost:26650"},
 			},
 			RoleVerif: {
 				Driver: driver.Config{
@@ -159,6 +161,7 @@ func DefaultSystemConfig(t testing.TB) SystemConfig {
 				RuntimeConfigReloadInterval: time.Minute * 10,
 				ConfigPersistence:           &rollupNode.DisabledConfigPersistence{},
 				Sync:                        sync.Config{SyncMode: sync.CLSync},
+				DaConfig:                    celestia.Config{DaRpc: "localhost:26650"},
 			},
 		},
 		Loggers: map[string]log.Logger{
@@ -924,6 +927,7 @@ func (cfg SystemConfig) Start(t *testing.T, _opts ...SystemConfigOption) (*Syste
 		BatchType:            batchType,
 		DataAvailabilityType: sys.Cfg.DataAvailabilityType,
 		CompressionAlgo:      compressionAlgo,
+		DaConfig:             celestia.CLIConfig{DaRpc: "localhost:26650"},
 	}
 	// Batch Submitter
 	batcher, err := bss.BatcherServiceFromCLIConfig(context.Background(), "0.0.1", batcherCLIConfig, sys.Cfg.Loggers["batcher"])
