@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	celestia "github.com/ethereum-optimism/optimism/op-celestia"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/stretchr/testify/require"
 
@@ -56,6 +57,7 @@ func TestSystemP2PAltSync(t *testing.T) {
 		Sync: sync.Config{
 			SyncModeReqResp: true,
 		},
+		DaConfig:            celestia.ReadCLIConfigFromEnv("OP_E2E"),
 	}
 	cfg.Nodes["bob"] = &config.Config{
 		Driver: driver.Config{
@@ -68,6 +70,7 @@ func TestSystemP2PAltSync(t *testing.T) {
 		Sync: sync.Config{
 			SyncModeReqResp: true,
 		},
+		DaConfig:            celestia.ReadCLIConfigFromEnv("OP_E2E"),
 	}
 	cfg.Loggers["alice"] = testlog.Logger(t, log.LevelInfo).New("role", "alice")
 	cfg.Loggers["bob"] = testlog.Logger(t, log.LevelInfo).New("role", "bob")
@@ -146,6 +149,7 @@ func TestSystemP2PAltSync(t *testing.T) {
 		Sync: sync.Config{
 			SyncModeReqResp: true,
 		},
+		DaConfig: celestia.ReadCLIConfigFromEnv("OP_E2E"),
 	}
 	e2esys.ConfigureL1(syncNodeCfg, sys.EthInstances["l1"], sys.L1BeaconEndpoint())
 	syncerL2Engine, err := geth.InitL2("syncer", sys.L2GenesisCfg, cfg.JWTFilePath)
