@@ -10,6 +10,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/stretchr/testify/require"
 
+	celestia "github.com/ethereum-optimism/optimism/op-celestia"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
 
@@ -123,6 +124,7 @@ func TestSystemDenseTopology(t *testing.T) {
 		},
 		InteropConfig:       &interop.Config{},
 		L1EpochPollInterval: time.Second * 4,
+		DaConfig:            celestia.ReadCLIConfigFromEnv("OP_E2E"),
 	}
 	cfg.Nodes["verifier3"] = &rollupNode.Config{
 		Driver: driver.Config{
@@ -132,6 +134,7 @@ func TestSystemDenseTopology(t *testing.T) {
 		},
 		InteropConfig:       &interop.Config{},
 		L1EpochPollInterval: time.Second * 4,
+		DaConfig:            celestia.ReadCLIConfigFromEnv("OP_E2E"),
 	}
 	cfg.Loggers["verifier2"] = testlog.Logger(t, log.LevelInfo).New("role", "verifier")
 	cfg.Loggers["verifier3"] = testlog.Logger(t, log.LevelInfo).New("role", "verifier")
