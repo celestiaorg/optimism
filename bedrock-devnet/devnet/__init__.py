@@ -245,6 +245,10 @@ def devnet_deploy(paths):
     batch_inbox_address = rollup_config['batch_inbox_address']
     log.info(f'Using batch inbox {batch_inbox_address}')
 
+    log.info('Bringing up DA')
+    run_command(['docker-compose', 'up', '-d', 'da'], cwd=ops_bedrock_dir, env={
+      'PWD': ops_bedrock_dir,
+    })
     log.info('Bringing up `op-node`, `op-proposer` and `op-batcher`.')
     run_command(['docker', 'compose', 'up', '-d', 'op-node', 'op-proposer', 'op-batcher'], cwd=paths.ops_bedrock_dir, env={
         'PWD': paths.ops_bedrock_dir,
