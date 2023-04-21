@@ -251,8 +251,7 @@ func (n *OpNode) init(ctx context.Context, cfg *config.Config, overrides Initial
 	if err := n.initDA(ctx, cfg); err != nil {
 		return fmt.Errorf("failed to init da: %w", err)
 	}
-	// initRuntimeConfig relies on side effects to set the runCfg, node.halted and call node.cancel if needed
-	if err := initRuntimeConfig(ctx, cfg, n); err != nil {
+	if err := n.initRuntimeConfig(ctx, cfg); err != nil { // depends on L2, to signal initial runtime values to
 		return fmt.Errorf("failed to init the runtime config: %w", err)
 	}
 
@@ -549,8 +548,8 @@ func (n *OpNode) initDA(ctx context.Context, cfg *config.Config) error {
 	return driver.SetDAClient(cfg.DaConfig)
 }
 
-func initL2(ctx context.Context, cfg *config.Config, node *OpNode) (*sources.EngineClient, interop.SubSystem, *driver.Driver, closableSafeDB, error) {
-	rpcClient, rpcCfg, err := cfg.L2.Setup(ctx, node.log, &cfg.Rollup, node.metrics)
+func (n *OpNode) initL2(ctx context.Context, cfg *config.Config) error {
+	rpcClient, rpcCfg, err := cfg.L2.Setup(ctx, n.log, &cfg.Rollup, n.metrics)
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf("failed to setup L2 execution-engine RPC client: %w", err)
 	}

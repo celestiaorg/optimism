@@ -54,9 +54,6 @@ func TestSystemP2PAltSync(t *testing.T) {
 		},
 		InteropConfig:       &interop.Config{},
 		L1EpochPollInterval: time.Second * 4,
-		Sync: sync.Config{
-			SyncModeReqResp: true,
-		},
 		DaConfig:            celestia.ReadCLIConfigFromEnv("OP_E2E"),
 	}
 	cfg.Nodes["bob"] = &config.Config{
@@ -67,9 +64,6 @@ func TestSystemP2PAltSync(t *testing.T) {
 		},
 		InteropConfig:       &interop.Config{},
 		L1EpochPollInterval: time.Second * 4,
-		Sync: sync.Config{
-			SyncModeReqResp: true,
-		},
 		DaConfig:            celestia.ReadCLIConfigFromEnv("OP_E2E"),
 	}
 	cfg.Loggers["alice"] = testlog.Logger(t, log.LevelInfo).New("role", "alice")
@@ -145,9 +139,6 @@ func TestSystemP2PAltSync(t *testing.T) {
 			OnUnsafeL2PayloadFn: func(ctx context.Context, from peer.ID, payload *eth.ExecutionPayloadEnvelope) {
 				syncedPayloads = append(syncedPayloads, payload.ExecutionPayload.ID().String())
 			},
-		},
-		Sync: sync.Config{
-			SyncModeReqResp: true,
 		},
 		DaConfig: celestia.ReadCLIConfigFromEnv("OP_E2E"),
 	}

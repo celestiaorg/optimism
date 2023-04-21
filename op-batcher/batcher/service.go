@@ -474,6 +474,23 @@ func (bs *BatcherService) initDA(cfg *CLIConfig) error {
 	return nil
 }
 
+func (bs *BatcherService) initDA(cfg *CLIConfig) error {
+	if !cfg.DaConfig.IsEnabled() {
+		bs.UseCelestiaDA = false
+		bs.DAClient = nil
+		return nil
+	}
+
+	bs.Log.Info("Using celestia DA", "config", cfg.DaConfig.CelestiaConfig())
+	client, err := celestia.NewDAClient(cfg.DaConfig.CelestiaConfig())
+	if err != nil {
+		return err
+	}
+	bs.DAClient = client
+	bs.UseCelestiaDA = true
+	return nil
+}
+
 // Start runs once upon start of the batcher lifecycle,
 // and starts batch-submission work if the batcher is configured to start submit data on startup.
 func (bs *BatcherService) Start(_ context.Context) error {
