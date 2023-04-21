@@ -283,6 +283,18 @@ def devnet_deploy(paths):
         docker_env['ALTDA_GENERIC_DA'] = 'false'
         docker_env['ALTDA_SERVICE'] = 'false'
 
+    log.info('Bringing up DA')
+    run_command(['docker', 'compose', 'up', '-d', 'da'], cwd=paths.ops_bedrock_dir, env=docker_env)
+    wait_up(26658)
+    time.sleep(15)
+    celestia_node_auth_token = os.getenv("CELESTIA_NODE_AUTH_TOKEN")
+    if not celestia_node_auth_token:
+        celestia_node_auth_token = run_command([
+            'docker', 'compose', 'exec', '--no-TTY', 'da', 'celestia', 'bridge', 'auth', 'admin', '--node.store', '/home/celestia/bridge'
+            ], cwd=paths.ops_bedrock_dir, env=docker_env, capture_output=True).stdout.decode().strip()
+    docker_env['CELESTIA_NODE_AUTH_TOKEN'] = celestia_node_auth_token
+    print('CELESTIA_NODE_AUTH_TOKEN: ', celestia_node_auth_token)
+
     # Bring up the rest of the services.
     log.info('Bringing up `op-node`, `op-proposer` and `op-batcher`.')
     run_command(['docker', 'compose', 'up', '-d', 'op-node', 'op-proposer', 'op-batcher', 'artifact-server'], cwd=paths.ops_bedrock_dir, env=docker_env)
@@ -363,10 +375,11 @@ def run_command_preset(command: CommandPreset):
     return proc.returncode
 
 
-def run_command(args, check=True, shell=False, cwd=None, env=None, timeout=None):
+def run_command(args, check=True, shell=False, cwd=None, env=None, timeout=None, capture_output=False):
     env = env if env else {}
     return subprocess.run(
         args,
+        capture_output=capture_output,
         check=check,
         shell=shell,
         env={
