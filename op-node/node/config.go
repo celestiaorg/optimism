@@ -7,6 +7,7 @@ import (
 	"math"
 	"time"
 
+	celestia "github.com/ethereum-optimism/optimism/op-celestia"
 	"github.com/ethereum-optimism/optimism/op-node/flags"
 	"github.com/ethereum-optimism/optimism/op-node/p2p"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
@@ -76,6 +77,8 @@ type Config struct {
 
 	// Plasma DA config
 	Plasma plasma.CLIConfig
+
+	DaConfig celestia.Config
 }
 
 type RPCConfig struct {
@@ -176,6 +179,9 @@ func (cfg *Config) Check() error {
 	}
 	if cfg.Plasma.Enabled {
 		log.Warn("Alt-DA Mode is a Beta feature of the MIT licensed OP Stack.  While it has received initial review from core contributors, it is still undergoing testing, and may have bugs or other issues.")
+	}
+	if err := cfg.DaConfig.Check(); err != nil {
+		return fmt.Errorf("da config error: %w", err)
 	}
 	return nil
 }
