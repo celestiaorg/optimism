@@ -2,8 +2,11 @@
   <br />
   <br />
   <a href="https://optimism.io"><img alt="Optimism" src="https://raw.githubusercontent.com/ethereum-optimism/brand-kit/main/assets/svg/OPTIMISM-R.svg" width=600></a>
+  <h3><a href="https://optimism.io">Optimism</a> is a low-cost and lightning-fast Ethereum L2 blockchain, built with the OP Stack.</h3>
   <br />
-  <h3><a href="https://optimism.io">Optimism</a> is Ethereum, scaled.</h3>
+  <h3>+</h3>
+  <a href="https://celestia.org"><img alt="Celestia" src="docs/op-stack/src/assets/docs/understand/Celestia-logo-color-color.svg" width=600></a>
+  <h3><a href="https://celestia.org">Celestia</a> is a modular data availability network that securely scales with the number of users, making it easy for anyone to launch their own blockchain.</h3>
   <br />
 </div>
 
@@ -29,8 +32,24 @@
 ## What is Optimism?
 
 [Optimism](https://www.optimism.io/) is a project dedicated to scaling Ethereum's technology and expanding its ability to coordinate people from across the world to build effective decentralized economies and governance systems. The [Optimism Collective](https://www.optimism.io/vision) builds open-source software that powers scalable blockchains and aims to address key governance and economic challenges in the wider Ethereum ecosystem. Optimism operates on the principle of **impact=profit**, the idea that individuals who positively impact the Collective should be proportionally rewarded with profit. **Change the incentives and you change the world.**
+If you're looking to run the OP Stack + Celestia setup for this repository, please visit the [Optimism & Celestia guides and tutorials](https://docs.celestia.org/developers/intro-to-op-stack/) to get started.
 
 In this repository you'll find numerous core components of the OP Stack, the decentralized software stack maintained by the Optimism Collective that powers Optimism and forms the backbone of blockchains like [OP Mainnet](https://explorer.optimism.io/) and [Base](https://base.org). The OP Stack is designed to be aggressively open-source — you are welcome to explore, modify, and extend this code.
+The OP Stack powers Optimism, an Ethereum L2 blockchain, and forms the technical foundation for the [the Optimism Collective](https://app.optimism.io/announcement)—a group committed to the **impact=profit** principle. This principle rewards individuals for their positive contributions to the collective.
+
+Optimism addresses critical coordination failures in the crypto ecosystem, such as funding public goods and infrastructure. The OP Stack focuses on creating a shared, open-source system for developing new L2 blockchains within the proposed Superchain ecosystem, promoting collaboration and preventing redundant efforts.
+
+As Optimism evolves, the OP Stack will adapt, encompassing components ranging from blockchain infrastructure to governance systems. This software suite aims to simplify L2 blockchain creation while supporting the growth and development of the Optimism ecosystem.
+
+## What is Celestia?
+
+Celestia is a modular consensus and data network, built to enable anyone to easily deploy their own blockchain with minimal overhead.
+
+Celestia is a minimal blockchain that only orders and publishes transactions and does not execute them. By decoupling the consensus and application execution layers, Celestia modularizes the blockchain technology stack and unlocks new possibilities for decentralized application builders. Lean more at [Celestia.org](https://celestia.org).
+
+## Maintenance
+
+The maintenance guide for this repository can be found in the Wiki tab of the repository or [here](https://github.com/celestiaorg/optimism/wiki).
 
 ## Documentation
 
@@ -40,6 +59,22 @@ In this repository you'll find numerous core components of the OP Stack, the dec
 ## Specification
 
 Detailed specifications for the OP Stack can be found within the [OP Stack Specs](https://github.com/ethereum-optimism/specs) repository.
+If you're interested in the technical details of how Optimism works, refer to the [Optimism Protocol Specification](https://github.com/ethereum-optimism/specs).
+If you want to build on top of Celestia, take a look at the documentation at [docs.celestia.org](https://docs.celestia.org).
+
+If you want to learn more about the OP Stack, check out the documentation at [stack.optimism.io](https://stack.optimism.io/).
+
+## Community
+
+### Optimism
+
+General discussion happens most frequently on the [Optimism discord](https://discord.gg/optimism).
+Governance discussion can also be found on the [Optimism Governance Forum](https://gov.optimism.io/).
+
+### Celestia
+
+General discussion happens most frequently on the [Celestia discord](https://discord.com/invite/YsnTPcSfWQ).
+Other discussions can be found on the [Celestia forum](https://forum.celestia.org).
 
 ## Community
 
@@ -54,11 +89,47 @@ The OP Stack is a collaborative project. By collaborating on free, open software
 
 [Good First Issues](https://github.com/ethereum-optimism/optimism/issues?q=is:open+is:issue+label:D-good-first-issue) are a great place to look for tasks to tackle if you're not sure where to start, and see [CONTRIBUTING.md](./CONTRIBUTING.md) for info on larger projects.
 
-## Security Policy and Vulnerability Reporting
+## e2e testing
 
 Please refer to the canonical [Security Policy](https://github.com/ethereum-optimism/.github/blob/master/SECURITY.md) document for detailed information about how to report vulnerabilities in this codebase.
 Bounty hunters are encouraged to check out the [Optimism Immunefi bug bounty program](https://immunefi.com/bounty/optimism/).
 The Optimism Immunefi program offers up to $2,000,042 for in-scope critical vulnerabilities.
+This repository has updated end-to-end tests in the `op-e2e` package to work with
+Celestia as the data availability (DA) layer.
+
+Currently, the tests assume a working [Celestia devnet](https://github.com/rollkit/local-celestia-devnet) running locally:
+
+```bash
+docker run -p 26650:26650 ghcr.io/rollkit/local-celestia-devnet:v0.12.7
+```
+
+The e2e tests can be triggered with:
+
+```bash
+cd $HOME/optimism
+cd op-e2e
+OP_E2E_DISABLE_PARALLEL=true OP_E2E_CANNON_ENABLED=false OP_NODE_DA_RPC=localhost:26650 OP_BATCHER_DA_RPC=localhost:26650 make test
+```
+
+## Bridging
+
+If you have the OP Stack + Celestia setup running, you can test out bridging from the L1
+to the L2.
+
+To do this, first navigate to the `packages/contracts-bedrock` directory and create a
+`.env` file with the following contents:
+
+```bash
+L1_PROVIDER_URL=http://localhost:8545
+L2_PROVIDER_URL=http://localhost:9545
+PRIVATE_KEY=bf7604d9d3a1c7748642b1b7b05c2bd219c9faa91458b370f85e5a40f3b03af7
+```
+
+Then, run the following from the same directory:
+
+```bash
+npx hardhat deposit --network devnetL1 --l1-provider-url http://localhost:8545 --l2-provider-url http://localhost:9545 --amount-eth <AMOUNT> --to <ADDRESS>
+```
 
 ## Directory Structure
 

@@ -11,6 +11,7 @@ import (
 	altda "github.com/ethereum-optimism/optimism/op-alt-da"
 	"github.com/ethereum-optimism/optimism/op-batcher/compressor"
 	"github.com/ethereum-optimism/optimism/op-batcher/flags"
+	celestia "github.com/ethereum-optimism/optimism/op-celestia"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	oplog "github.com/ethereum-optimism/optimism/op-service/log"
 	opmetrics "github.com/ethereum-optimism/optimism/op-service/metrics"
@@ -62,6 +63,12 @@ type CLIConfig struct {
 
 	// Maximum number of blocks to add to a span batch. Default is 0 - no maximum.
 	MaxBlocksPerSpanBatch int
+
+	// MaxFrameSize is the maximum size of a frame in a batch tx.
+	MaxFrameSize uint64
+
+	// MultiFrameTxs controls whether to put all frames of a channel inside a single tx.
+	MultiFrameTxs bool
 
 	// The target number of frames to create per channel. Controls number of blobs
 	// per blob tx, if using Blob DA.
@@ -125,6 +132,7 @@ type CLIConfig struct {
 	PprofConfig   oppprof.CLIConfig
 	RPC           oprpc.CLIConfig
 	AltDA         altda.CLIConfig
+	DaConfig      celestia.CLIConfig
 }
 
 func (c *CLIConfig) Check() error {
@@ -182,6 +190,9 @@ func (c *CLIConfig) Check() error {
 	if err := c.RPC.Check(); err != nil {
 		return err
 	}
+	if err := c.DaConfig.Check(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -200,6 +211,8 @@ func NewConfig(ctx *cli.Context) *CLIConfig {
 		MaxChannelDuration:            ctx.Uint64(flags.MaxChannelDurationFlag.Name),
 		MaxL1TxSize:                   ctx.Uint64(flags.MaxL1TxSizeBytesFlag.Name),
 		MaxBlocksPerSpanBatch:         ctx.Int(flags.MaxBlocksPerSpanBatch.Name),
+		MaxFrameSize:                  ctx.Uint64(flags.MaxFrameSizeFlag.Name),
+		MultiFrameTxs:                 ctx.Bool(flags.MultiFrameTxsFlag.Name),
 		TargetNumFrames:               ctx.Int(flags.TargetNumFramesFlag.Name),
 		ApproxComprRatio:              ctx.Float64(flags.ApproxComprRatioFlag.Name),
 		Compressor:                    ctx.String(flags.CompressorFlag.Name),
@@ -216,6 +229,7 @@ func NewConfig(ctx *cli.Context) *CLIConfig {
 		PprofConfig:                   oppprof.ReadCLIConfig(ctx),
 		RPC:                           oprpc.ReadCLIConfig(ctx),
 		AltDA:                         altda.ReadCLIConfig(ctx),
+		DaConfig:                      celestia.ReadCLIConfig(ctx),
 		ThrottleThreshold:             ctx.Uint64(flags.ThrottleThresholdFlag.Name),
 		ThrottleTxSize:                ctx.Uint64(flags.ThrottleTxSizeFlag.Name),
 		ThrottleBlockSize:             ctx.Uint64(flags.ThrottleBlockSizeFlag.Name),
