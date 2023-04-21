@@ -97,7 +97,8 @@ func testSystem4844E2E(t *testing.T, multiBlob bool, daType batcherFlags.DataAva
 	}()
 
 	cfg.DisableProposer = true // disable L2 output submission for this test
-	sys, err := cfg.Start(t, action)
+
+	sys, err := cfg.Start(t, action, e2esys.WithBatcherCelestiaDisabled()) // disable Celestia for this test
 	require.NoError(t, err, "Error starting up system")
 
 	log := testlog.Logger(t, log.LevelInfo)
@@ -274,7 +275,9 @@ func TestBatcherAutoDA(t *testing.T) {
 	cfg.DisableProposer = true // disable L2 output submission for this test
 	cfg.DisableTxForwarder = true
 	cfg.DisableBatcher = true // disable batcher because we start it manually later
-	sys, err := cfg.Start(t)
+
+	sys, err := cfg.Start(t, e2esys.WithBatcherCelestiaDisabled()) // disable Celestia for this test
+
 	require.NoError(t, err, "Error starting up system")
 	log := testlog.Logger(t, log.LevelInfo)
 	log.Info("genesis", "l2", sys.RollupConfig.Genesis.L2, "l1", sys.RollupConfig.Genesis.L1, "l2_time", sys.RollupConfig.Genesis.L2Time)

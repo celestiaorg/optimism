@@ -255,7 +255,9 @@ func (n *OpNode) init(ctx context.Context, cfg *config.Config, overrides Initial
 	if err != nil {
 		return fmt.Errorf("failed to init L1 Source: %w", err)
 	}
-
+	if err := n.initDA(ctx, cfg); err != nil {
+		return fmt.Errorf("failed to init da: %w", err)
+	}
 	// initRuntimeConfig relies on side effects to set the runCfg, node.halted and call node.cancel if needed
 	if err := initRuntimeConfig(ctx, cfg, n); err != nil {
 		return fmt.Errorf("failed to init the runtime config: %w", err)
@@ -547,6 +549,11 @@ func initL1BeaconAPI(ctx context.Context, cfg *config.Config, node *OpNode) (*so
 		node.log.Info("Connected to L1 Beacon API, ready for EIP-4844 blobs retrieval.", "version", beaconVersion)
 		return beacon, nil
 	}
+}
+
+func (n *OpNode) initDA(ctx context.Context, cfg *config.Config) error {
+	n.log.Info("Using celestia DA", "config", cfg.DaConfig.CelestiaConfig())
+	return driver.SetDAClient(cfg.DaConfig)
 }
 
 func initL2(ctx context.Context, cfg *config.Config, node *OpNode) (*sources.EngineClient, interop.SubSystem, *driver.Driver, closableSafeDB, error) {

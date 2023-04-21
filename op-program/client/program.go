@@ -5,6 +5,8 @@ import (
 	"io"
 	"os"
 
+	celestia "github.com/ethereum-optimism/optimism/op-celestia"
+	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	preimage "github.com/ethereum-optimism/optimism/op-preimage"
 	"github.com/ethereum-optimism/optimism/op-program/client/boot"
 	"github.com/ethereum-optimism/optimism/op-program/client/claim"
@@ -19,6 +21,7 @@ import (
 
 type Config struct {
 	InteropEnabled bool
+	DAClient       *celestia.DAClient
 }
 
 // Main executes the client program in a detached context and exits the current process.
@@ -36,8 +39,17 @@ func Main(useInterop bool) {
 	logger.Info("Starting fault proof program client", "useInterop", useInterop)
 	preimageOracle := preimage.ClientPreimageChannel()
 	preimageHinter := preimage.ClientHinterChannel()
+
+	daCfg := celestia.ReadCLIConfigFromEnv("OP_E2E")
+	daClient, err := celestia.NewDAClient(daCfg.CelestiaConfig())
+	if err != nil {
+		log.Error("Cannot initialize daClient", "err", err)
+		os.Exit(1)
+	}
+
 	config := Config{
 		InteropEnabled: useInterop,
+		DAClient:       daClient,
 	}
 	if err := RunProgram(logger, preimageOracle, preimageHinter, config); errors.Is(err, claim.ErrClaimNotValid) {
 		log.Error("Claim is invalid", "err", err)
@@ -62,6 +74,7 @@ func RunProgram(logger log.Logger, preimageOracle io.ReadWriter, preimageHinter 
 		bootInfo := boot.BootstrapInterop(pClient)
 		return interop.RunInteropProgram(logger, bootInfo, l1PreimageOracle, l2PreimageOracle)
 	}
+	derive.SetCelestiaDA(cfg.DAClient)
 	bootInfo := boot.NewBootstrapClient(pClient).BootInfo()
 	db := memorydb.New()
 	return RunPreInteropProgram(logger, bootInfo, l1PreimageOracle, l2PreimageOracle, db, tasks.DerivationOptions{})

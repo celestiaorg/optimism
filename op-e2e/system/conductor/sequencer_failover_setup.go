@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	celestia "github.com/ethereum-optimism/optimism/op-celestia"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -306,6 +307,7 @@ func setupBatcher(t *testing.T, sys *e2esys.System, conductors map[string]*condu
 		DataAvailabilityType:         batcherFlags.CalldataType,
 		ActiveSequencerCheckDuration: 0,
 		CompressionAlgo:              derive.Zlib,
+		DaConfig:                     celestia.ReadCLIConfigFromEnv("OP_E2E"),
 	}
 
 	batcherContext, batcherCancel := context.WithCancel(context.Background())
@@ -371,6 +373,7 @@ func sequencerCfg(conductorRPCEndpoint config.ConductorRPCFunc) *config.Config {
 		ConductorEnabled:            true,
 		ConductorRpc:                conductorRPCEndpoint,
 		ConductorRpcTimeout:         5 * time.Second,
+		DaConfig:                    celestia.ReadCLIConfigFromEnv("OP_E2E"),
 	}
 }
 

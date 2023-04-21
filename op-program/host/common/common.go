@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 
+	celestia "github.com/ethereum-optimism/optimism/op-celestia"
 	preimage "github.com/ethereum-optimism/optimism/op-preimage"
 	cl "github.com/ethereum-optimism/optimism/op-program/client"
 	"github.com/ethereum-optimism/optimism/op-program/host/config"
@@ -77,6 +78,14 @@ func FaultProofProgram(ctx context.Context, logger log.Logger, cfg *config.Confi
 		clientCfg := cl.Config{
 			InteropEnabled: cfg.InteropEnabled,
 		}
+
+		daCfg := celestia.ReadCLIConfigFromEnv("OP_E2E")
+		daClient, err := celestia.NewDAClient(daCfg.CelestiaConfig())
+		if err != nil {
+			return fmt.Errorf("failed to initialize daClient: %w", err)
+		}
+		clientCfg.DAClient = daClient
+
 		return cl.RunProgram(logger, pClientRW, hClientRW, clientCfg)
 	}
 }
