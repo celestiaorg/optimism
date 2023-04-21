@@ -86,7 +86,10 @@ func (ds *BlobDataSource) open(ctx context.Context) ([]blobOrCalldata, error) {
 		return nil, NewTemporaryError(fmt.Errorf("failed to open blob data source: %w", err))
 	}
 
-	data, hashes := dataAndHashesFromTxs(txs, &ds.dsCfg, ds.batcherAddr, ds.log)
+	data, hashes, err := dataAndHashesFromTxs(txs, &ds.dsCfg, ds.batcherAddr, ds.log)
+	if err != nil {
+		return nil, err
+	}
 
 	if len(hashes) == 0 {
 		// there are no blobs to fetch so we can return immediately
@@ -115,11 +118,12 @@ func (ds *BlobDataSource) open(ctx context.Context) ([]blobOrCalldata, error) {
 // dataAndHashesFromTxs extracts calldata and datahashes from the input transactions and returns them. It
 // creates a placeholder blobOrCalldata element for each returned blob hash that must be populated
 // by fillBlobPointers after blob bodies are retrieved.
-func dataAndHashesFromTxs(txs types.Transactions, config *DataSourceConfig, batcherAddr common.Address, logger log.Logger) ([]blobOrCalldata, []eth.IndexedBlobHash) {
+func dataAndHashesFromTxs(txs types.Transactions, config *DataSourceConfig, batcherAddr common.Address, logger log.Logger) ([]blobOrCalldata, []eth.IndexedBlobHash, error) {
 	data := []blobOrCalldata{}
 	var hashes []eth.IndexedBlobHash
 	blobIndex := 0 // index of each blob in the block's blob sidecar
 	for _, tx := range txs {
+		logger := log.New("tx", tx.Hash())
 		// skip any non-batcher transactions
 		if !isValidBatchTx(tx, config.l1Signer, config.batchInboxAddress, batcherAddr, logger) {
 			blobIndex += len(tx.BlobHashes())
@@ -127,8 +131,15 @@ func dataAndHashesFromTxs(txs types.Transactions, config *DataSourceConfig, batc
 		}
 		// handle non-blob batcher transactions by extracting their calldata
 		if tx.Type() != types.BlobTxType {
-			calldata := eth.Data(tx.Data())
-			data = append(data, blobOrCalldata{nil, &calldata})
+			calldata, err := DataFromEVMTransactions(*config, batcherAddr, types.Transactions{tx}, logger)
+			if err != nil {
+				return nil, nil, err
+			}
+			if len(calldata) == 0 {
+				log.Warn("celestia: skipping empty calldata")
+				continue
+			}
+			data = append(data, blobOrCalldata{nil, &calldata[0]})
 			continue
 		}
 		// handle blob batcher transactions by extracting their blob hashes, ignoring any calldata.
@@ -145,7 +156,7 @@ func dataAndHashesFromTxs(txs types.Transactions, config *DataSourceConfig, batc
 			blobIndex += 1
 		}
 	}
-	return data, hashes
+	return data, hashes, nil
 }
 
 // fillBlobPointers goes back through the data array and fills in the pointers to the fetched blob
