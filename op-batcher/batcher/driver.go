@@ -2,6 +2,7 @@ package batcher
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -22,6 +23,7 @@ import (
 
 	altda "github.com/ethereum-optimism/optimism/op-alt-da"
 	"github.com/ethereum-optimism/optimism/op-batcher/metrics"
+	celestia "github.com/ethereum-optimism/optimism/op-celestia"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	"github.com/ethereum-optimism/optimism/op-service/dial"
@@ -91,6 +93,7 @@ type DriverSetup struct {
 	ChannelConfig     ChannelConfigProvider
 	AltDA             *altda.DAClient
 	ChannelOutFactory ChannelOutFactory
+	DAClient          *celestia.DAClient
 }
 
 // BatchSubmitter encapsulates a service responsible for submitting L2 tx
@@ -733,7 +736,7 @@ func (l *BatchSubmitter) publishTxToL1(ctx context.Context, queue *txmgr.Queue[t
 		return err
 	}
 
-	if err = l.sendTransaction(txdata, queue, receiptsCh, daGroup); err != nil {
+	if err = l.sendTransaction(txdata, queue, receiptsCh, daGroup, isPectra); err != nil {
 		return fmt.Errorf("BatchSubmitter.sendTransaction failed: %w", err)
 	}
 	return nil
@@ -822,10 +825,24 @@ func (l *BatchSubmitter) publishToAltDAAndL1(txdata txData, queue *txmgr.Queue[t
 	}
 }
 
+// fallbackTxCandidate creates a fallback tx candidate for the given txdata.
+func (l *BatchSubmitter) fallbackTxCandidate(txdata txData) (*txmgr.TxCandidate, error) {
+	switch l.DAClient.FallbackMode {
+	case celestia.FallbackModeBlobData:
+		return l.blobTxCandidate(txdata)
+	case celestia.FallbackModeCallData:
+		return l.calldataTxCandidate(txdata.CallData()), nil
+	case celestia.FallbackModeDisabled:
+		return nil, fmt.Errorf("celestia: fallback disabled")
+	default:
+		return nil, fmt.Errorf("celestia: unknown fallback mode: %s", l.DAClient.FallbackMode)
+	}
+}
+
 // sendTransaction creates & queues for sending a transaction to the batch inbox address with the given `txData`.
 // This call will block if the txmgr queue is at the  max-pending limit.
 // The method will block if the queue's MaxPendingTransactions is exceeded.
-func (l *BatchSubmitter) sendTransaction(txdata txData, queue *txmgr.Queue[txRef], receiptsCh chan txmgr.TxReceipt[txRef], daGroup *errgroup.Group) error {
+func (l *BatchSubmitter) sendTransaction(txdata txData, queue *txmgr.Queue[txRef], receiptsCh chan txmgr.TxReceipt[txRef], daGroup *errgroup.Group, isPectra bool) error {
 	var err error
 
 	// if Alt DA is enabled we post the txdata to the DA Provider and replace it with the commitment.
@@ -835,22 +852,27 @@ func (l *BatchSubmitter) sendTransaction(txdata txData, queue *txmgr.Queue[txRef
 		return nil
 	}
 
-	var candidate *txmgr.TxCandidate
-	if txdata.asBlob {
-		if candidate, err = l.blobTxCandidate(txdata); err != nil {
-			// We could potentially fall through and try a calldata tx instead, but this would
-			// likely result in the chain spending more in gas fees than it is tuned for, so best
-			// to just fail. We do not expect this error to trigger unless there is a serious bug
-			// or configuration issue.
-			return fmt.Errorf("could not create blob tx candidate: %w", err)
-		}
-	} else {
-		// sanity check
-		if nf := len(txdata.frames); nf != 1 {
-			l.Log.Crit("Unexpected number of frames in calldata tx", "num_frames", nf)
-		}
-		candidate = l.calldataTxCandidate(txdata.CallData())
+	// force celestia tx candidate, multiframe is set by UseBlobs which is not affected
+	txdata.asBlob = false
+	// sanity check
+	if nf := len(txdata.frames); nf > l.ChannelConfig.ChannelConfig(isPectra).TargetNumFrames {
+		l.Log.Crit("Unexpected number of frames in calldata tx", "num_frames", nf)
 	}
+	candidate, err := l.celestiaTxCandidate(txdata.CallData())
+	if err != nil {
+		l.Log.Error("celestia: blob submission failed", "err", err)
+		candidate, err = l.fallbackTxCandidate(txdata)
+		if err != nil {
+			l.Log.Error("celestia: fallback failed", "err", err)
+			l.recordFailedTx(txdata.ID(), err)
+			return nil
+		}
+	}
+	// restore asBlob for cancellation in case of blobdata fallback
+	if len(candidate.Blobs) > 0 {
+		txdata.asBlob = true
+	}
+	l.Log.Info("tx candidate", "ID", txdata.ID(), "len(txdata.frames)", len(txdata.frames), "txdata.asBlob", txdata.asBlob)
 
 	l.sendTx(txdata, false, candidate, queue, receiptsCh)
 	return nil
@@ -892,6 +914,22 @@ func (l *BatchSubmitter) calldataTxCandidate(data []byte) *txmgr.TxCandidate {
 		To:     &l.RollupConfig.BatchInboxAddress,
 		TxData: data,
 	}
+}
+
+func (l *BatchSubmitter) celestiaTxCandidate(data []byte) (*txmgr.TxCandidate, error) {
+	l.Log.Info("Building Celestia transaction candidate", "size", len(data))
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Duration(l.RollupConfig.BlockTime)*time.Second)
+	ids, err := l.DAClient.Client.Submit(ctx, [][]byte{data}, l.DAClient.GasPrice, l.DAClient.Namespace)
+	cancel()
+	if err != nil {
+		return nil, err
+	}
+	if len(ids) != 1 {
+		return nil, fmt.Errorf("celestia: expected 1 id, got %d", len(ids))
+	}
+	l.Log.Info("celestia: blob successfully submitted", "id", hex.EncodeToString(ids[0]))
+	data = append([]byte{celestia.DerivationVersionCelestia}, ids[0]...)
+	return l.calldataTxCandidate(data), nil
 }
 
 func (l *BatchSubmitter) handleReceipt(r txmgr.TxReceipt[txRef]) {

@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum-optimism/optimism/op-batcher/flags"
 	"github.com/ethereum-optimism/optimism/op-batcher/metrics"
 	"github.com/ethereum-optimism/optimism/op-batcher/rpc"
+	celestia "github.com/ethereum-optimism/optimism/op-celestia"
 	"github.com/ethereum-optimism/optimism/op-node/chaincfg"
 	"github.com/ethereum-optimism/optimism/op-node/params"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
@@ -78,6 +79,7 @@ type BatcherService struct {
 	stopped         atomic.Bool
 
 	NotSubmittingOnStart bool
+	DAClient             *celestia.DAClient
 }
 
 type DriverSetupOption func(setup *DriverSetup)
@@ -135,6 +137,13 @@ func (bs *BatcherService) initFromCLIConfig(ctx context.Context, version string,
 	}
 	if err := bs.initPProf(cfg); err != nil {
 		return fmt.Errorf("failed to init profiling: %w", err)
+	}
+	// init before driver
+	if err := bs.initAltDA(cfg); err != nil {
+		return fmt.Errorf("failed to init AltDA: %w", err)
+	}
+	if err := bs.initDA(cfg); err != nil {
+		return fmt.Errorf("failed to start da server: %w", err)
 	}
 	bs.initDriver(opts...)
 	if err := bs.initRPCServer(cfg); err != nil {
@@ -220,6 +229,16 @@ func (bs *BatcherService) initChannelConfig(cfg *CLIConfig) error {
 		BatchType:             cfg.BatchType,
 	}
 
+	// override max frame size if set
+	if cfg.MaxFrameSize > 0 {
+		cc.MaxFrameSize = cfg.MaxFrameSize
+	}
+
+	// enable multi-frame txs if set
+	if cfg.MultiFrameTxs {
+		cc.UseBlobs = true
+	}
+
 	switch cfg.DataAvailabilityType {
 	case flags.BlobsType, flags.AutoType:
 		if !cfg.TestUseMaxTxSizeForBlobs {
@@ -256,6 +275,7 @@ func (bs *BatcherService) initChannelConfig(cfg *CLIConfig) error {
 	bs.Log.Info("Initialized channel-config",
 		"da_type", cfg.DataAvailabilityType,
 		"use_alt_da", bs.UseAltDA,
+		"use_blobs", cc.UseBlobs,
 		"max_frame_size", cc.MaxFrameSize,
 		"target_num_frames", cc.TargetNumFrames,
 		"compressor", cc.CompressorConfig.Kind,
@@ -340,6 +360,7 @@ func (bs *BatcherService) initDriver(opts ...DriverSetupOption) {
 		EndpointProvider: bs.EndpointProvider,
 		ChannelConfig:    bs.ChannelConfig,
 		AltDA:            bs.AltDA,
+		DAClient:         bs.DAClient,
 	}
 	for _, opt := range opts {
 		opt(&ds)
@@ -375,6 +396,15 @@ func (bs *BatcherService) initAltDA(cfg *CLIConfig) error {
 	}
 	bs.AltDA = config.NewDAClient()
 	bs.UseAltDA = config.Enabled
+	return nil
+}
+
+func (bs *BatcherService) initDA(cfg *CLIConfig) error {
+	client, err := celestia.NewDAClient(cfg.DaConfig.Rpc, cfg.DaConfig.AuthToken, cfg.DaConfig.Namespace, cfg.DaConfig.FallbackMode, cfg.DaConfig.GasPrice)
+	if err != nil {
+		return err
+	}
+	bs.DAClient = client
 	return nil
 }
 
