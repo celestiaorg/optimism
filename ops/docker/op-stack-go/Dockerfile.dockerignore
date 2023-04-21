@@ -6,6 +6,7 @@
 !/devnet-sdk
 !/op-core
 !/op-batcher
+!/op-celestia
 !/op-chain-ops
 !/op-deployer
 !/op-dripper
