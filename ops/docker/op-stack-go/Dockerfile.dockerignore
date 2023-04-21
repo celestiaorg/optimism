@@ -5,6 +5,7 @@
 !/cannon
 !/op-batcher
 !/op-bootnode
+!/op-celestia
 !/op-chain-ops
 !/op-challenger
 !/packages/contracts-bedrock/snapshots

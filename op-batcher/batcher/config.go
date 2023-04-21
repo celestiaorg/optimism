@@ -105,6 +105,7 @@ type CLIConfig struct {
 	PprofConfig   oppprof.CLIConfig
 	RPC           oprpc.CLIConfig
 	AltDA         altda.CLIConfig
+	DaConfig      celestia.CLIConfig
 }
 
 func (c *CLIConfig) Check() error {
@@ -159,6 +160,9 @@ func (c *CLIConfig) Check() error {
 	if err := c.RPC.Check(); err != nil {
 		return err
 	}
+	if err := c.DaConfig.Check(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -193,5 +197,6 @@ func NewConfig(ctx *cli.Context) *CLIConfig {
 		PprofConfig:                  oppprof.ReadCLIConfig(ctx),
 		RPC:                          oprpc.ReadCLIConfig(ctx),
 		AltDA:                        altda.ReadCLIConfig(ctx),
+		DaConfig:                     celestia.ReadCLIConfig(ctx),
 	}
 }
