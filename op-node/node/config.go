@@ -7,6 +7,7 @@ import (
 	"math"
 	"time"
 
+	celestia "github.com/ethereum-optimism/optimism/op-celestia"
 	"github.com/ethereum-optimism/optimism/op-node/flags"
 	"github.com/ethereum-optimism/optimism/op-node/p2p"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
@@ -76,6 +77,8 @@ type Config struct {
 
 	// Plasma DA config
 	Plasma plasma.CLIConfig
+
+	DaConfig celestia.Config
 }
 
 type RPCConfig struct {
@@ -173,6 +176,9 @@ func (cfg *Config) Check() error {
 	}
 	if err := cfg.Plasma.Check(); err != nil {
 		return fmt.Errorf("plasma config error: %w", err)
+	}
+	if err := cfg.DaConfig.Check(); err != nil {
+		return fmt.Errorf("da config error: %w", err)
 	}
 	return nil
 }
