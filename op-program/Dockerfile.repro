@@ -1,6 +1,7 @@
-ARG GO_VERSION=1.23.8-alpine3.21
+ARG GO_VERSION=1.24.4-alpine3.22
 ARG EXPORT_TARGET=current
 FROM golang:${GO_VERSION} AS src
+FROM golang:1.24.4-alpine3.22 AS src
 
 RUN apk add --no-cache make gcc musl-dev linux-headers git jq bash just
 

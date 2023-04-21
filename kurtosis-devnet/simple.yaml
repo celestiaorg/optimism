@@ -47,6 +47,8 @@ optimism_package:
       batcher_params:
         image: {{ localDockerImage "op-batcher" }}
         extra_params: []
+      da_server_params:
+        image: ghcr.io/rollkit/local-celestia-devnet:v0.13.1
       proposer_params:
         image: {{ localDockerImage "op-proposer" }}
         extra_params: []
@@ -59,6 +61,12 @@ optimism_package:
       participants: "*"
       cannon_prestates_url: {{ localPrestate.URL }}
       cannon_trace_types: ["cannon", "permissioned"]
+      mev_params:
+        rollup_boost_image: ""
+        builder_host: ""
+        builder_port: ""
+      additional_services:
+        - da_server
   op_contract_deployer_params:
     image: {{ localDockerImage "op-deployer" }}
     l1_artifacts_locator: {{ localContractArtifacts "l1" }}
@@ -73,7 +81,7 @@ ethereum_package:
   participants:
     - el_type: geth
       cl_type: teku
-      cl_image: consensys/teku:25.7.1
+      cl_image: "ethpandaops/teku:master"
   network_params:
     preset: minimal
     genesis_delay: 5
