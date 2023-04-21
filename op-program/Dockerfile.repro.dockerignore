@@ -5,6 +5,7 @@
 # internal dependencies
 !cannon/
 !op-alt-da/
+!op-celestia/
 !op-node/
 !op-preimage/
 !op-program/
