@@ -11,6 +11,14 @@ volumes:
 
 
 services:
+  da:
+    container_name: da
+    platform: linux/x86_64
+    image: "ghcr.io/celestiaorg/local-celestia-devnet:main"
+    ports:
+      - "26657:26657"
+      - "26659:26659"
+
   l1:
     build:
       context: .
@@ -70,6 +78,8 @@ services:
       --metrics.port=7300
       --pprof.enabled
       --rpc.enable-admin
+      --da-rpc=http://da:26659
+      --namespace-id=e8e5f679bf7116cb
     ports:
       - "7545:8545"
       - "9003:9003"
@@ -112,6 +122,7 @@ services:
       - l1
       - l2
       - op-node
+      - da
     build:
       context: ../
       dockerfile: ./op-batcher/Dockerfile
@@ -139,6 +150,8 @@ services:
       OP_BATCHER_PPROF_ENABLED: "true"
       OP_BATCHER_METRICS_ENABLED: "true"
       OP_BATCHER_RPC_ENABLE_ADMIN: "true"
+      OP_BATCHER_NAMESPACE_ID: "e8e5f679bf7116cb"
+      OP_BATCHER_DA_RPC: http://da:26659
 
   stateviz:
     build:

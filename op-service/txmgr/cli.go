@@ -31,6 +31,8 @@ const (
 	TxSendTimeoutFlagName             = "txmgr.send-timeout"
 	TxNotInMempoolTimeoutFlagName     = "txmgr.not-in-mempool-timeout"
 	ReceiptQueryIntervalFlagName      = "txmgr.receipt-query-interval"
+	DaRpcFlagName = "da-rpc"
+	NamespaceIdFlagName = "namespace-id"
 )
 
 var (
@@ -127,6 +129,8 @@ type CLIConfig struct {
 	NetworkTimeout            time.Duration
 	TxSendTimeout             time.Duration
 	TxNotInMempoolTimeout     time.Duration
+	DaRpc string
+	NamespaceId string
 }
 
 func (m CLIConfig) Check() error {
@@ -173,6 +177,8 @@ func ReadCLIConfig(ctx *cli.Context) CLIConfig {
 		NetworkTimeout:            ctx.GlobalDuration(NetworkTimeoutFlagName),
 		TxSendTimeout:             ctx.GlobalDuration(TxSendTimeoutFlagName),
 		TxNotInMempoolTimeout:     ctx.GlobalDuration(TxNotInMempoolTimeoutFlagName),
+		DaRpc:                     ctx.GlobalString(DaRpcFlagName),
+		NamespaceId:               ctx.GlobalString(NamespaceIdFlagName),
 	}
 }
 
@@ -260,6 +266,12 @@ type Config struct {
 	// are required to give up on a tx at a particular nonce without receiving
 	// confirmation.
 	SafeAbortNonceTooLowCount uint64
+
+	// DaRpc is the HTTP provider URL for the Data Availability node.
+	DaRpc string
+
+	// NamespaceId is the id of the namespace of the Data Availability node.
+	NamespaceId string
 
 	// Signer is used to sign transactions when the gas price is increased.
 	Signer opcrypto.SignerFn
