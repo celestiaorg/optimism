@@ -20,6 +20,18 @@ services:
         GIT_DATE: "0"
     image: us-docker.pkg.dev/oplabs-tools-artifacts/images/op-stack-go:devnet
     entrypoint: ["echo", "build complete"]
+  da:
+    image: ghcr.io/rollkit/local-celestia-devnet:v0.12.7
+    ports:
+      - "26650:26650"
+    environment:
+      CELESTIA_NAMESPACE: 000008e5f679bf7116cb
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:26659/header/1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   l1:
     build:
@@ -59,6 +71,7 @@ services:
       - op_stack_go_builder
       - l1
       - l2
+      - da
     build:
       context: ../
       dockerfile: ./op-node/Dockerfile
@@ -68,6 +81,7 @@ services:
     command: >
       op-node
       --l1=ws://l1:8546
+      --l1.beacon.ignore
       --l2=http://l2:8551
       --l2.jwt-secret=/config/test-jwt-secret.txt
       --sequencer.enabled
@@ -89,6 +103,8 @@ services:
       --metrics.port=7300
       --pprof.enabled
       --rpc.enable-admin
+    environment:
+      OP_NODE_DA_RPC: "da:26650"
     ports:
       - "7545:8545"
       - "9003:9003"
@@ -135,10 +151,16 @@ services:
 
   op-batcher:
     depends_on:
-      - op_stack_go_builder
-      - l1
-      - l2
-      - op-node
+      op_stack_go_builder:
+        condition: service_started
+      l1:
+        condition: service_started
+      l2:
+        condition: service_started
+      op-node:
+        condition: service_started
+      da:
+        condition: service_healthy
     build:
       context: ../
       dockerfile: ./op-batcher/Dockerfile
@@ -153,6 +175,7 @@ services:
       OP_BATCHER_L1_ETH_RPC: http://l1:8545
       OP_BATCHER_L2_ETH_RPC: http://l2:8545
       OP_BATCHER_ROLLUP_RPC: http://op-node:8545
+      OFFLINE_GAS_ESTIMATION: null
       OP_BATCHER_MAX_CHANNEL_DURATION: 1
       OP_BATCHER_SUB_SAFETY_MARGIN: 4 # SWS is 15, ChannelTimeout is 40
       OP_BATCHER_POLL_INTERVAL: 1s
@@ -163,6 +186,7 @@ services:
       OP_BATCHER_METRICS_ENABLED: "true"
       OP_BATCHER_RPC_ENABLE_ADMIN: "true"
       OP_BATCHER_BATCH_TYPE: 0
+      OP_BATCHER_DA_RPC: "da:26650"
 
   op-challenger:
     depends_on:
