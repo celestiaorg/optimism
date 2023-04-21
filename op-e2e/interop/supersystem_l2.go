@@ -8,6 +8,7 @@ import (
 
 	bss "github.com/ethereum-optimism/optimism/op-batcher/batcher"
 	batcherFlags "github.com/ethereum-optimism/optimism/op-batcher/flags"
+	celestia "github.com/ethereum-optimism/optimism/op-celestia"
 	"github.com/ethereum-optimism/optimism/op-chain-ops/devkeys"
 	"github.com/ethereum-optimism/optimism/op-chain-ops/interopgen"
 	"github.com/ethereum-optimism/optimism/op-e2e/e2eutils/geth"
@@ -193,6 +194,7 @@ func (s *interopE2ESystem) newNodeForL2(
 			SupportsPostFinalizationELSync: false,
 		},
 		ConfigPersistence: config.DisabledConfigPersistence{},
+		DaConfig:          celestia.ReadCLIConfigFromEnv("OP_E2E"),
 	}
 	opNode, err := opnode.NewOpnode(logger.New("service", "op-node"),
 		nodeCfg, func(err error) {
@@ -295,6 +297,7 @@ func (s *interopE2ESystem) newBatcherForL2(
 		MaxBlocksPerSpanBatch: 10,
 		DataAvailabilityType:  daType,
 		CompressionAlgo:       derive.Brotli,
+		DaConfig:              celestia.ReadCLIConfigFromEnv("OP_E2E"),
 	}
 	batcher, err := bss.BatcherServiceFromCLIConfig(
 		context.Background(), "0.0.1", batcherCLIConfig,

@@ -9,6 +9,7 @@ import (
 
 	//nolint:all
 	"github.com/libp2p/go-libp2p/p2p/host/peerstore/pstoreds"
+	"github.com/libp2p/go-libp2p/p2p/net/swarm"
 
 	libp2p "github.com/libp2p/go-libp2p"
 	mplex "github.com/libp2p/go-libp2p-mplex"
@@ -229,7 +230,7 @@ func (conf *Config) Host(log log.Logger, reporter metrics.Reporter, metrics Host
 		//libp2p.ResourceManager(nil), // TODO use resource manager interface to manage resources per peer better.
 		libp2p.Peerstore(ps),
 		libp2p.BandwidthReporter(reporter), // may be nil if disabled
-		libp2p.MultiaddrResolver(madns.DefaultResolver),
+		libp2p.MultiaddrResolver(swarm.ResolverFromMaDNS{Resolver: madns.DefaultResolver}),
 		// Ping is a small built-in libp2p protocol that helps us check/debug latency between peers.
 		libp2p.Ping(true),
 	}
