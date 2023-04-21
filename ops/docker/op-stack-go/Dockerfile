@@ -21,7 +21,7 @@ ARG KONA_VERSION=none
 ARG ASTERISC_VERSION=none
 
 # We may be cross-building for another platform. Specify which platform we need as builder.
-FROM --platform=$BUILDPLATFORM golang:1.23.8-alpine3.20 AS builder
+FROM --platform=$BUILDPLATFORM golang:1.24.6-alpine3.22 AS builder
 
 RUN apk add --no-cache curl tar gzip make gcc musl-dev linux-headers git jq bash
 
@@ -185,6 +185,11 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
   GOOS=$TARGETOS GOARCH=$TARGETARCH GITCOMMIT=$GIT_COMMIT GITDATE=$GIT_DATE VERSION="$OP_INTEROP_MON_VERSION" \
   op-interop-mon/op-interop-mon
 
+FROM --platform=$BUILDPLATFORM builder AS op-celestia-indexer-builder
+ARG OP_CELESTIA_INDEXER_VERSION=v0.0.0
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build cd op-celestia && just \
+  GOOS=$TARGETOS GOARCH=$TARGETARCH GITCOMMIT=$GIT_COMMIT GITDATE=$GIT_DATE VERSION="$OP_CELESTIA_INDEXER_VERSION"
+
 FROM $TARGET_BASE_IMAGE AS cannon-target
 COPY --from=cannon-builder /app/cannon/bin/cannon /usr/local/bin/
 COPY --from=cannon-builder /app/cannon/multicannon/embeds/* /usr/local/bin/
@@ -270,3 +275,7 @@ CMD ["op-faucet"]
 FROM $TARGET_BASE_IMAGE AS op-interop-mon-target
 COPY --from=op-interop-mon-builder /app/op-interop-mon/bin/op-interop-mon /usr/local/bin/
 CMD ["op-interop-mon"]
+
+FROM $TARGET_BASE_IMAGE AS op-celestia-indexer-target
+COPY --from=op-celestia-indexer-builder /app/op-celestia/bin/op-celestia-indexer /usr/local/bin/
+CMD ["op-celestia-indexer"]
