@@ -13,17 +13,24 @@ volumes:
 services:
   da:
     container_name: da
-    platform: linux/x86_64
-    image: "ghcr.io/rollkit/local-celestia-devnet:v0.9.1"
+    user: "10001:10001"
+    platform: "${PLATFORM}"
+    image: "ghcr.io/celestiaorg/celestia-node:v0.9.1"
+    command: celestia light start --core.ip https://rpc-blockspacerace.pops.one --gateway --gateway.addr da --gateway.port 26659 --p2p.network blockspacerace
+    environment:
+      - NODE_TYPE=light
+      - P2P_NETWORK=blockspacerace
+    volumes:
+      - ./celestia-pwd:/home/celestia
     ports:
       - "26657:26657"
       - "26659:26659"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:26659/header/1"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:26659/header/1"]
+    #   interval: 5s
+    #   timeout: 5s
+    #   retries: 5
+    #   start_period: 10s
 
   l1:
     build:
@@ -126,11 +133,6 @@ services:
       OP_PROPOSER_DA_RPC: http://da:26659
 
   op-batcher:
-    depends_on:
-      - l1
-      - l2
-      - op-node
-      - da
     build:
       context: ../
       dockerfile: ./op-batcher/Dockerfile
@@ -139,8 +141,11 @@ services:
       - "7301:7300"
       - "6545:8545"
     depends_on:
+      l1:
+      l2:
+      op-node:
       da:
-        condition: service_healthy
+        # condition: service_healthy
     environment:
       OP_BATCHER_L1_ETH_RPC: http://l1:8545
       OP_BATCHER_L2_ETH_RPC: http://l2:8545
