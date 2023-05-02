@@ -65,5 +65,5 @@ __pycache__
 crytic-export
 
 # Celestia key and data files
-ops-bedrock/celestia-pwd/.celestia-light-blockspacerace-0/keys
+# ops-bedrock/celestia-pwd/.celestia-light-blockspacerace-0/keys
 ops-bedrock/celestia-pwd/.celestia-light-blockspacerace-0/data
