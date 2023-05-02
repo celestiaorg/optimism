@@ -57,6 +57,7 @@
     "@types/chai-as-promised": "^7.1.4",
     "@types/mocha": "^8.2.2",
     "@types/node": "^12.0.0",
+    "@types/pino-pretty": "^5.0.0",
     "@typescript-eslint/eslint-plugin": "^5.45.1",
     "@typescript-eslint/parser": "^5.45.1",
     "chai": "^4.2.0",
