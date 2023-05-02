@@ -17,6 +17,8 @@ import (
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
 )
 
+const maxRetries = 3
+
 type DataIter interface {
 	Next(ctx context.Context) (eth.Data, error)
 }
@@ -129,10 +131,21 @@ func DataFromEVMTransactions(config *rollup.Config, daCfg *rollup.DAConfig, batc
 				log.Warn("unable to decode data pointer", "index", j, "err", err)
 				continue
 			}
-			data, err := daCfg.Client.NamespacedData(context.Background(), daCfg.NamespaceId, uint64(height))
-			if err != nil {
-				log.Warn("unable to retrieve data from da", "err", err)
+
+			var data [][]byte
+			var err2 error
+			for i := 0; i < maxRetries; i++ {
+				data, err2 = daCfg.Client.NamespacedData(context.Background(), daCfg.NamespaceId, uint64(height))
+				if err2 == nil {
+					break
+				}
+				log.Warn("unable to retrieve data from da, retrying...", "err", err2, "attempt", i+1)
 			}
+			if err2 != nil {
+				log.Error("unable to retrieve data from da after retries", "err", err2)
+				continue
+			}
+
 			out = append(out, data[index])
 		}
 	}
