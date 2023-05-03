@@ -5,7 +5,7 @@
   <h3><a href="https://optimism.io">Optimism</a> is a low-cost and lightning-fast Ethereum L2 blockchain, built with the OP Stack.</h3>
   <br />
   <h3>+</h3>
-  <a href="https://optimism.io"><img alt="Optimism" src="docs/op-stack/src/assets/docs/understand/Celestia-logo-color-color.svg" width=600></a>
+  <a href="https://celestia.org"><img alt="Celestia" src="docs/op-stack/src/assets/docs/understand/Celestia-logo-color-color.svg" width=600></a>
   <h3><a href="https://celestia.org">Celestia</a> is a modular consensus and data network, built to enable anyone to easily deploy their own blockchain with minimal overhead.</h3>
   <br />
 </div>
@@ -16,11 +16,17 @@
 
 In this repository, you'll find numerous core components of the OP Stack, the decentralized software stack maintained by the Optimism Collective that powers Optimism and forms the backbone of blockchains like [OP Mainnet](https://explorer.optimism.io/) and [Base](https://base.org). Designed to be "aggressively open source," the OP Stack encourages you to explore, modify, extend, and test the code as needed. Although not all elements of the OP Stack are contained here, many of its essential components can be found within this repository. By collaborating on free, open software and shared standards, the Optimism Collective aims to prevent siloed software development and rapidly accelerate the development of the Ethereum ecosystem. Come contribute, build the future, and redefine power, together.
 
+## What is Celestia?
+
+Celestia is a modular consensus and data network, built to enable anyone to easily deploy their own blockchain with minimal overhead.
+
+Celestia is a minimal blockchain that only orders and publishes transactions and does not execute them. By decoupling the consensus and application execution layers, Celestia modularizes the blockchain technology stack and unlocks new possibilities for decentralized application builders. Lean more at [Celestia.org](https://celestia.org).
+
 ## Documentation
 
-- If you want to build on top of OP Mainnet, refer to the [Optimism Community Hub](https://community.optimism.io)
-- If you want to build your own OP Stack based blockchain, refer to the [OP Stack docs](https://stack.optimism.io)
-- If you want to contribute to the OP Stack, check out the [Protocol Specs](./specs)
+If you want to build on top of Celestia, take a look at the documentation at [docs.celestia.org](https://docs.celestia.org).
+
+If you want to learn more about the OP Stack, check out the documentation at [stack.optimism.io](https://stack.optimism.io/).
 
 ## Community
 
