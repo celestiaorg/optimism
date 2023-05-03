@@ -14,7 +14,7 @@
 
 If you're looking to run the OP Stack + Celestia setup for this repository, please visit the [Optimism & Celestia tutorial](https://docs.celestia.org/developers/optimism) to get started.
 
-## What is Optimism and the OP Stack?
+## What are Optimism and the OP Stack?
 
 [Optimism](https://www.optimism.io/) is a project dedicated to scaling Ethereum's technology and expanding its ability to coordinate people from across the world to build effective decentralized economies and governance systems. The [Optimism Collective](https://app.optimism.io/announcement) builds open-source software for running L2 blockchains and aims to address key governance and economic challenges in the wider cryptocurrency ecosystem. Optimism operates on the principle of **impact=profit**, the idea that individuals who positively impact the Collective should be proportionally rewarded with profit. **Change the incentives and you change the world.**
 
