@@ -46,13 +46,6 @@ else
 fi
 export PLATFORM
 
-# Set permissions for the mounted directory
-# that will store the key for the DA light node
-# to be able to write data to Celestia
-# TODO: determine if this is necessary to include in the script
-# sudo chown 10001:10001 $PWD/ops-bedrock/celestia-pwd
-# sudo chmod -R 777 $PWD/ops-bedrock/celestia-pwd
-
 L1_URL="http://localhost:8545"
 L2_URL="http://localhost:9545"
 
