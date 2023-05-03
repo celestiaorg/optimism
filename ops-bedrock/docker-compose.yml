@@ -18,7 +18,7 @@ services:
   # da:
   #   container_name: da
   #   platform: linux/x86_64
-  #   image: "ghcr.io/rollkit/local-celestia-devnet:v0.9.1"
+  #   image: "ghcr.io/rollkit/local-celestia-devnet:v0.9.2"
   #   ports:
   #     - "26657:26657"
   #     - "26659:26659"
@@ -35,7 +35,7 @@ services:
     container_name: da
     user: "10001:10001"
     platform: "${PLATFORM}"
-    image: "ghcr.io/celestiaorg/celestia-node:v0.9.1"
+    image: "ghcr.io/celestiaorg/celestia-node:v0.9.2"
     command: celestia light start --core.ip https://rpc-blockspacerace.pops.one --gateway --gateway.addr da --gateway.port 26659 --p2p.network blockspacerace
     environment:
       - NODE_TYPE=light
