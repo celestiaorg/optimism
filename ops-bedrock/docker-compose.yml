@@ -14,7 +14,7 @@ services:
 # If you would like to use the docker image for `local-celestia-devnet`,
 # you can uncomment the following section of `da:` and comment out the
 # following `da:` section. You should also uncomment the `depends_on:`
-# section on line 169
+# section on line 168-170.
   # da:
   #   container_name: da
   #   platform: linux/x86_64
