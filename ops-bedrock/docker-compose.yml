@@ -13,7 +13,7 @@ volumes:
 services:
 # TODO: add option to use RPC instead of docker image
 # TODO: reimplement health check after resolving issue querying light node
-# from within the container
+#       from within the container
   da:
     container_name: da
     user: "10001:10001"
@@ -24,7 +24,7 @@ services:
       - NODE_TYPE=light
       - P2P_NETWORK=blockspacerace
     volumes:
-      - ../celestia-pwd:/home/celestia
+      - $HOME/:/home/celestia
     ports:
       - "26657:26657"
       - "26659:26659"
