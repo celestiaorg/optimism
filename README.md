@@ -72,6 +72,7 @@ Then, run the following from the same directory:
 
 ```bash
 npx hardhat deposit --network devnetL1 --l1-provider-url http://localhost:8545 --l2-provider-url http://localhost:9545 --amount-eth <AMOUNT> --to <ADDRESS>```
+```
 
 ## Directory Structure
 
