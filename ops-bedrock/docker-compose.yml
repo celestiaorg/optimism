@@ -11,6 +11,23 @@ volumes:
 
 
 services:
+# If you would like to use the docker image for `local-celestia-devnet`,
+# you can uncomment the following section of `da:` and comment out the
+# following `da:` section. You should also uncomment the `depends_on:`
+# section on line 169
+  # da:
+  #   container_name: da
+  #   platform: linux/x86_64
+  #   image: "ghcr.io/rollkit/local-celestia-devnet:v0.9.1"
+  #   ports:
+  #     - "26657:26657"
+  #     - "26659:26659"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:26659/header/1"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 10s
 # TODO: add option to use RPC instead of docker image
 # TODO: reimplement health check after resolving issue querying light node
 #       from within the container
