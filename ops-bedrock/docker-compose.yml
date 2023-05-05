@@ -12,36 +12,42 @@ volumes:
 
 services:
 # If you would like to use the docker image for `local-celestia-devnet`,
-# you can uncomment the following section of `da:` and comment out the
-# following `da:` section. You should also uncomment the `depends_on:`
-# section on lines 159-161.
-  # da:
-  #   container_name: da
-  #   platform: linux/x86_64
-  #   image: "ghcr.io/rollkit/local-celestia-devnet:v0.9.2"
-  #   ports:
-  #     - "26657:26657"
-  #     - "26659:26659"
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost:26659/header/1"]
-  #     interval: 5s
-  #     timeout: 5s
-  #     retries: 5
-  #     start_period: 10s
+# you can leave the following section of `da` as is:
   da:
-    container_name: da
-    user: "10001:10001"
-    platform: "${PLATFORM}"
-    image: "ghcr.io/celestiaorg/celestia-node:v0.9.2"
-    command: celestia light start --core.ip https://rpc-blockspacerace.pops.one --gateway --gateway.addr da --gateway.port 26659 --p2p.network blockspacerace
-    environment:
-      - NODE_TYPE=light
-      - P2P_NETWORK=blockspacerace
-    volumes:
-      - $HOME/:/home/celestia
+    container_name: celestia-devnet
+    platform: linux/x86_64
+    image: "ghcr.io/rollkit/local-celestia-devnet:v0.9.2"
     ports:
       - "26657:26657"
       - "26659:26659"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:26659/header/1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+# If you would like to use a light node for `celestia-node`, you can
+# uncomment the following lines. You should also comment out the `depends_on:`
+# section on lines 165-167. In order to use a light node, you will need to
+# sync the node first and fund it with TIA. This is so that the light node
+# can post data to Celestia. This `docker-compose.yml` file is set up to
+# look in your `$HOME` for the `.celestia-light-blockspacerace-0` directory.
+# If you would like to use a # different directory, you can change the
+# volume mount on line 47.
+  # da:
+  #   container_name: celestia-light-node
+  #   user: "10001:10001"
+  #   platform: "${PLATFORM}"
+  #   image: "ghcr.io/celestiaorg/celestia-node:v0.9.2"
+  #   command: celestia light start --core.ip https://rpc-blockspacerace.pops.one --gateway --gateway.addr da --gateway.port 26659 --p2p.network blockspacerace
+  #   environment:
+  #     - NODE_TYPE=light
+  #     - P2P_NETWORK=blockspacerace
+  #   volumes:
+  #     - $HOME/:/home/celestia
+  #   ports:
+  #     - "26657:26657"
+  #     - "26659:26659"
 
   l1:
     build:
@@ -156,9 +162,9 @@ services:
       - "6061:6060"
       - "7301:7300"
       - "6545:8545"
-    # depends_on:
-    #   da:
-    #     condition: service_healthy
+    depends_on:
+      da:
+        condition: service_healthy
     environment:
       OP_BATCHER_L1_ETH_RPC: http://l1:8545
       OP_BATCHER_L2_ETH_RPC: http://l2:8545
