@@ -133,16 +133,15 @@ func DataFromEVMTransactions(config *rollup.Config, daCfg *rollup.DAConfig, batc
 			}
 
 			var data [][]byte
-			var err2 error
 			for i := 0; i < maxRetries; i++ {
-				data, err2 = daCfg.Client.NamespacedData(context.Background(), daCfg.NamespaceId, uint64(height))
-				if err2 == nil {
+				data, err = daCfg.Client.NamespacedData(context.Background(), daCfg.NamespaceId, uint64(height))
+				if err == nil {
 					break
 				}
-				log.Warn("unable to retrieve data from da, retrying...", "err", err2, "attempt", i+1)
+				log.Warn("unable to retrieve data from da, retrying...", "err", err, "attempt", i+1)
 			}
-			if err2 != nil {
-				log.Error("unable to retrieve data from da after retries", "err", err2)
+			if err != nil {
+				log.Error("unable to retrieve data from da after retries", "err", err)
 				continue
 			}
 
