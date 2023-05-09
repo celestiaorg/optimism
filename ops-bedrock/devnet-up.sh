@@ -29,22 +29,24 @@
 
 set -eu
 
-# Add architecture detection logic here
-## TODO: Test out on AMD64
-ARCH=$(uname -m)
-PLATFORM=""
+# # Add architecture detection logic here
+# ## TODO: Test out on AMD64
+# ARCH=$(uname -m)
+# PLATFORM=""
 
-if [ "$ARCH" = "x86_64" ]; then
-  PLATFORM="linux/amd64"
-elif [ "$ARCH" = "aarch64" ]; then
-  PLATFORM="linux/arm64"
-elif [ "$ARCH" = "arm64" ]; then
-  PLATFORM="linux/arm64"
-else
-  echo "Unsupported architecture"
-  exit 1
-fi
-export PLATFORM
+# if [ "$ARCH" = "x86_64" ]; then
+#   PLATFORM="linux/amd64"
+# elif [ "$ARCH" = "aarch64" ]; then
+#   PLATFORM="linux/arm64"
+# elif [ "$ARCH" = "arm64" ]; then
+#   PLATFORM="linux/arm64"
+# else
+#   echo "Unsupported architecture"
+#   exit 1
+# fi
+# export PLATFORM
+
+export DOCKER_HOST_IP=$(ip route | awk 'NR==1 {print $3}')
 
 L1_URL="http://localhost:8545"
 L2_URL="http://localhost:9545"
