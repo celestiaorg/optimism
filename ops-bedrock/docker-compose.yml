@@ -115,6 +115,7 @@ services:
       - "9003:9003"
       - "7300:7300"
       - "6060:6060"
+      - "26659:26659"
     volumes:
       - "${PWD}/p2p-sequencer-key.txt:/config/p2p-sequencer-key.txt"
       - "${PWD}/p2p-node-key.txt:/config/p2p-node-key.txt"
@@ -133,6 +134,7 @@ services:
     ports:
       - "6062:6060"
       - "7302:7300"
+      - "26659:26659"
     environment:
       OP_PROPOSER_L1_ETH_RPC: http://l1:8545
       OP_PROPOSER_ROLLUP_RPC: http://op-node:8545
@@ -161,6 +163,7 @@ services:
       - "6061:6060"
       - "7301:7300"
       - "6545:8545"
+      - "26659:26659"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:26659/header/1"]
       interval: 5s
