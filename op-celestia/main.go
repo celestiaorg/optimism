@@ -27,7 +27,7 @@ func main() {
 	}
 	fmt.Printf("celestia block height: %v; tx index: %v\n", height, index)
 	fmt.Println("-----------------------------------------")
-	client, err := cnc.NewClient("http://localhost:26659", cnc.WithTimeout(30*time.Second))
+	client, err := cnc.NewClient("http://host.docker.internal:26659", cnc.WithTimeout(30*time.Second))
 	if err != nil {
 		panic(err)
 	}
