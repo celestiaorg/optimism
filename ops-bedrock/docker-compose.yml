@@ -9,6 +9,9 @@ volumes:
   l2_data:
   op_log:
 
+extra_hosts:
+    - "host.docker.internal:host-gateway"
+
 
 services:
 # If you would like to use the docker image for `local-celestia-devnet`,
