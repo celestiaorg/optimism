@@ -14,8 +14,6 @@ services:
 # If you would like to use the docker image for `local-celestia-devnet`,
 # you can leave the following section of `da` as is:
   # da:
-  #   environment:
-  #     DOCKER_HOST_IP: ${DOCKER_HOST_IP}
   #   container_name: celestia-devnet
   #   platform: linux/x86_64
   #   image: "ghcr.io/rollkit/local-celestia-devnet:v0.9.2"
@@ -23,7 +21,7 @@ services:
   #     - "26657:26657"
   #     - "26659:26659"
   #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://$DOCKER_HOST_IP:26659/header/1"]
+  #     test: ["CMD", "curl", "-f", "http://127.0.0.1:26659/header/1"]
   #     interval: 5s
   #     timeout: 5s
   #     retries: 5
@@ -80,8 +78,6 @@ services:
       - "--authrpc.jwtsecret=/config/test-jwt-secret.txt"
 
   op-node:
-    environment:
-      DOCKER_HOST_IP: ${DOCKER_HOST_IP}
     depends_on:
       - l1
       - l2
@@ -112,7 +108,7 @@ services:
       --metrics.port=7300
       --pprof.enabled
       --rpc.enable-admin
-      --da-rpc=http://$DOCKER_HOST_IP:26659
+      --da-rpc=http://127.0.0.1:26659
       --namespace-id=e8e5f679bf7116cb
     ports:
       - "7545:8545"
@@ -138,7 +134,6 @@ services:
       - "6062:6060"
       - "7302:7300"
     environment:
-      DOCKER_HOST_IP: ${DOCKER_HOST_IP}
       OP_PROPOSER_L1_ETH_RPC: http://l1:8545
       OP_PROPOSER_ROLLUP_RPC: http://op-node:8545
       OP_PROPOSER_POLL_INTERVAL: 1s
@@ -152,7 +147,7 @@ services:
       OP_PROPOSER_METRICS_ENABLED: "true"
       OP_PROPOSER_ALLOW_NON_FINALIZED: "true"
       OP_PROPOSER_NAMESPACE_ID: "e8e5f679bf7116cb"
-      OP_PROPOSER_DA_RPC: http://$DOCKER_HOST_IP:26659
+      OP_PROPOSER_DA_RPC: http://127.0.0.1:26659
 
   op-batcher:
     depends_on:
@@ -167,13 +162,12 @@ services:
       - "7301:7300"
       - "6545:8545"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://$DOCKER_HOST_IP:26659/header/1"]
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:26659/header/1"]
       interval: 5s
       timeout: 5s
       retries: 5
       start_period: 10s
     environment:
-      DOCKER_HOST_IP: ${DOCKER_HOST_IP}
       OP_BATCHER_L1_ETH_RPC: http://l1:8545
       OP_BATCHER_L2_ETH_RPC: http://l2:8545
       OP_BATCHER_ROLLUP_RPC: http://op-node:8545
@@ -194,7 +188,7 @@ services:
       OP_BATCHER_METRICS_ENABLED: "true"
       OP_BATCHER_RPC_ENABLE_ADMIN: "true"
       OP_BATCHER_NAMESPACE_ID: "e8e5f679bf7116cb"
-      OP_BATCHER_DA_RPC: http://$DOCKER_HOST_IP:26659
+      OP_BATCHER_DA_RPC: http://127.0.0.1:26659
 
   stateviz:
     build:
