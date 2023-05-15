@@ -50,7 +50,8 @@ func RunProgram(logger log.Logger, preimageOracle io.ReadWriter, preimageHinter 
 	logger.Info("Program Bootstrapped", "bootInfo", bootInfo)
 	return runDerivation(
 		logger,
-		bootInfo.RollupConfig,
+		bootInfo.Rollup,
+		bootInfo.DAConfig,
 		bootInfo.L2ChainConfig,
 		bootInfo.L1Head,
 		bootInfo.L2OutputRoot,
@@ -71,7 +72,7 @@ func runDerivation(logger log.Logger, cfg *rollup.Config, l2Cfg *params.ChainCon
 	l2Source := l2.NewOracleEngine(cfg, logger, engineBackend)
 
 	logger.Info("Starting derivation")
-	d := cldr.NewDriver(logger, cfg, l1Source, l2Source, l2ClaimBlockNum)
+	d := cldr.NewDriver(logger, cfg, daCfg, l1Source, l2Source, l2ClaimBlockNum)
 	for {
 		if err = d.Step(context.Background()); errors.Is(err, io.EOF) {
 			break
