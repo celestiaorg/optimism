@@ -131,6 +131,7 @@ services:
       - l1
       - l2
       - op-node
+      - da
     build:
       context: ../
       dockerfile: ./op-batcher/Dockerfile
