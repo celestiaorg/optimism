@@ -74,17 +74,17 @@ devnet-up-deploy:
 .PHONY: devnet-up-deploy
 
 devnet-down:
-	@(cd ./ops-bedrock && GENESIS_TIMESTAMP=$(shell date +%s) docker-compose stop)
+	@(cd ./ops-bedrock && GENESIS_TIMESTAMP=$(shell date +%s) docker-compose -f docker-compose-devnet.yml stop)
 .PHONY: devnet-down
 
 testnet-down:
-	@(cd ./ops-bedrock && GENESIS_TIMESTAMP=$(shell date +%s) docker-compose stop)
+	@(cd ./ops-bedrock && GENESIS_TIMESTAMP=$(shell date +%s) docker-compose -f docker-compose-testnet.yml stop)
 .PHONY: testnet-down
 
 devnet-clean:
 	rm -rf ./packages/contracts-bedrock/deployments/devnetL1
 	rm -rf ./.devnet
-	cd ./ops-bedrock && docker-compose down
+	cd ./ops-bedrock && docker-compose -f docker-compose-devnet.yml down
 	docker image ls 'ops-bedrock*' --format='{{.Repository}}' | xargs -r docker rmi
 	docker volume ls --filter name=ops-bedrock --format='{{.Name}}' | xargs -r docker volume rm
 .PHONY: devnet-clean
@@ -92,14 +92,18 @@ devnet-clean:
 testnet-clean:
 	rm -rf ./packages/contracts-bedrock/deployments/devnetL1
 	rm -rf ./.devnet
-	cd ./ops-bedrock && docker-compose down
+	cd ./ops-bedrock && docker-compose -f docker-compose-testnet.yml down
 	docker image ls 'ops-bedrock*' --format='{{.Repository}}' | xargs -r docker rmi
 	docker volume ls --filter name=ops-bedrock --format='{{.Name}}' | xargs -r docker volume rm
 .PHONY: testnet-clean
 
 devnet-logs:
-	@(cd ./ops-bedrock && docker-compose logs -f)
+	@(cd ./ops-bedrock && docker-compose -f docker-compose-devnet.yml logs -f)
 	.PHONY: devnet-logs
+
+testnet-logs:
+	@(cd ./ops-bedrock && docker-compose -f docker-compose-testnet.yml logs -f)
+	.PHONY: testnet-logs
 
 test-unit:
 	make -C ./op-node test
