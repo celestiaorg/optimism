@@ -65,6 +65,10 @@ devnet-up:
 	@bash ./ops-bedrock/devnet-up.sh
 .PHONY: devnet-up
 
+testnet-up:
+	@bash ./ops-bedrock/testnet-up.sh
+.PHONY: testnet-up
+
 devnet-up-deploy:
 	PYTHONPATH=./bedrock-devnet python3 ./bedrock-devnet/main.py --monorepo-dir=.
 .PHONY: devnet-up-deploy
