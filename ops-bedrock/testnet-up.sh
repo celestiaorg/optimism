@@ -24,8 +24,8 @@
 # This script is safe to run multiple times. It stores state in `.devnet`, and
 # contracts-bedrock/deployments/devnetL1.
 #
-# Don't run this script directly. Run it using the makefile, e.g. `make devnet-up`.
-# To clean up your devnet, run `make devnet-clean`.
+# Don't run this script directly. Run it using the makefile, e.g. `make testnet-up`.
+# To clean up your devnet, run `make testnet-clean`.
 
 set -eu
 
