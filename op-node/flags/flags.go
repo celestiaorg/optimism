@@ -41,7 +41,7 @@ var (
 	DaRPC = cli.StringFlag{
 		Name:   "da-rpc",
 		Usage:  "Data Availability RPC",
-		Value:  "http://localhost:26659",
+		Value:  "http://da:26659",
 		EnvVar: prefixEnvVar("DA_RPC"),
 	}
 	NamespaceId = cli.StringFlag{
