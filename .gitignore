@@ -63,5 +63,3 @@ __pycache__
 
 # Ignore echidna artifacts
 crytic-export
-
-op-celestia/blockspacerace-data/
