@@ -127,6 +127,10 @@ devnet-down:
 	@(cd ./ops-bedrock && GENESIS_TIMESTAMP=$(shell date +%s) docker compose stop)
 .PHONY: devnet-down
 
+testnet-down:
+	@(cd ./ops-bedrock && GENESIS_TIMESTAMP=$(shell date +%s) docker-compose -f docker-compose-testnet.yml stop)
+.PHONY: testnet-down
+
 devnet-clean:
 	rm -rf ./packages/contracts-bedrock/deployments/devnetL1
 	rm -rf ./.devnet
@@ -141,6 +145,10 @@ devnet-allocs: pre-devnet
 devnet-logs:
 	@(cd ./ops-bedrock && docker compose logs -f)
 	.PHONY: devnet-logs
+
+testnet-logs:
+	@(cd ./ops-bedrock && docker-compose -f docker-compose-testnet.yml logs -f)
+	.PHONY: testnet-logs
 
 test-unit:
 	make -C ./op-node test
