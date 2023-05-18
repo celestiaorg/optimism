@@ -90,7 +90,7 @@ devnet-clean:
 .PHONY: devnet-clean
 
 testnet-clean:
-	rm -rf ./packages/contracts-bedrock/deployments/devnetL1
+	rm -rf ./packages/contracts-bedrock/deployments/testnetL1
 	rm -rf ./.devnet
 	cd ./ops-bedrock && docker-compose -f docker-compose-testnet.yml down
 	docker image ls 'ops-bedrock*' --format='{{.Repository}}' | xargs -r docker rmi
