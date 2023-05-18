@@ -65,7 +65,7 @@ if [ ! -f "$DEVNET/done" ]; then
   echo "Regenerating genesis files"
 
   TIMESTAMP=$(date +%s | xargs printf '0x%x')
-  cat "$CONTRACTS_BEDROCK/deploy-config/devnetL1.json" | jq -r ".l1GenesisBlockTimestamp = \"$TIMESTAMP\"" > /tmp/bedrock-devnet-deploy-config.json
+  cat "$CONTRACTS_BEDROCK/deploy-config/testnetL1.json" | jq -r ".l1GenesisBlockTimestamp = \"$TIMESTAMP\"" > /tmp/bedrock-devnet-deploy-config.json
 
   (
     cd "$OP_NODE"
