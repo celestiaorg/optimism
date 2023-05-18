@@ -22,7 +22,7 @@
 # time in this script.
 #
 # This script is safe to run multiple times. It stores state in `.devnet`, and
-# contracts-bedrock/deployments/devnetL1.
+# contracts-bedrock/deployments/testnetL1.
 #
 # Don't run this script directly. Run it using the makefile, e.g. `make testnet-up`.
 # To clean up your devnet, run `make testnet-clean`.
@@ -34,7 +34,7 @@ L2_URL="http://localhost:9545"
 
 OP_NODE="$PWD/op-node"
 CONTRACTS_BEDROCK="$PWD/packages/contracts-bedrock"
-NETWORK=devnetL1
+NETWORK=testnetL1
 DEVNET="$PWD/.devnet"
 
 # Helper method that waits for a given URL to be up. Can't use
