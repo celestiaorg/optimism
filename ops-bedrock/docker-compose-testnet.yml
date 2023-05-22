@@ -16,7 +16,7 @@ services:
     user: root
     platform: "${PLATFORM}"
     image: "ghcr.io/celestiaorg/celestia-node:v0.7.1"
-    command: celestia light start --core.ip https://limani.celestia-devops.dev --gateway --gateway.addr da --gateway.port 26659 --p2p.network arabica
+    command: celestia light start --core.ip https://rpc.limani.celestia-devops.dev --gateway --gateway.addr da --gateway.port 26659 --p2p.network arabica
     environment:
       - NODE_TYPE=light
       - P2P_NETWORK=arabica
