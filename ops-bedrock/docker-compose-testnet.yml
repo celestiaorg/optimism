@@ -16,7 +16,7 @@ services:
     user: root
     platform: "${PLATFORM}"
     image: "ghcr.io/celestiaorg/celestia-node:v0.10.0"
-    command: celestia light start --core.ip https://rpc-blockspacerace.pops.one --gateway --gateway.addr da --gateway.port 26659 --p2p.network blockspacerace
+    command: celestia light start --core.ip https://rpc-1.celestia.nodes.guru/ --gateway --gateway.addr da --gateway.port 26659 --p2p.network blockspacerace
     environment:
       - NODE_TYPE=light
       - P2P_NETWORK=blockspacerace
