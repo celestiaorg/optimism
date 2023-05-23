@@ -13,7 +13,7 @@
 # Docker build cache hit rate. `alpine` is chosen as the base image for the
 # first stage because it's the smallest image that have access to the `cp
 # --parents -t` command (by installing the `coreutils` package).
-FROM alpine:3.16 as manifests
+FROM alpine:3.18 as manifests
 RUN apk add coreutils
 
 WORKDIR /tmp
@@ -80,7 +80,7 @@ WORKDIR /opt/optimism/packages/contracts
 COPY ./ops/scripts/deployer.sh .
 CMD ["yarn", "run", "deploy"]
 
-FROM alpine:3.16.2 as contract-artifacts-bedrock
+FROM alpine:3.18.0 as contract-artifacts-bedrock
 RUN mkdir -p /artifacts
 WORKDIR /artifacts
 COPY --from=base /opt/optimism/packages/contracts-bedrock/artifacts  /artifacts/contracts-bedrock
