@@ -96,7 +96,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN_SECRET }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Publish L2Geth
         uses: docker/build-push-action@v2
@@ -122,7 +122,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN_SECRET }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Publish Gas Oracle
         uses: docker/build-push-action@v2
@@ -148,7 +148,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN_SECRET }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Publish Hardhat Node
         uses: docker/build-push-action@v2
@@ -174,7 +174,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_ACCESS_TOKEN_SECRET }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Publish foundry
         uses: docker/build-push-action@v2
@@ -194,7 +194,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Login to Docker Hub
         uses: docker/login-action@v1
@@ -231,7 +231,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Login to Docker Hub
         uses: docker/login-action@v1
@@ -268,7 +268,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Login to Docker Hub
         uses: docker/login-action@v1
@@ -295,7 +295,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Login to Docker Hub
         uses: docker/login-action@v1
@@ -322,7 +322,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Login to Docker Hub
         uses: docker/login-action@v1
@@ -349,7 +349,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Login to Docker Hub
         uses: docker/login-action@v1
@@ -376,7 +376,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Login to Docker Hub
         uses: docker/login-action@v1
@@ -403,7 +403,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Login to Docker Hub
         uses: docker/login-action@v1
@@ -430,7 +430,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Login to Docker Hub
         uses: docker/login-action@v1
@@ -457,7 +457,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Login to Docker Hub
         uses: docker/login-action@v1
@@ -484,7 +484,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Login to Docker Hub
         uses: docker/login-action@v1
@@ -511,7 +511,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Login to Docker Hub
         uses: docker/login-action@v1
@@ -538,7 +538,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Login to Docker Hub
         uses: docker/login-action@v1
@@ -565,7 +565,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Login to Docker Hub
         uses: docker/login-action@v1
@@ -591,7 +591,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Login to Docker Hub
         uses: docker/login-action@v1
