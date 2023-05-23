@@ -36,7 +36,7 @@ require (
 	golang.org/x/crypto v0.6.0
 	golang.org/x/exp v0.0.0-20230213192124-5e25df0256eb
 	golang.org/x/term v0.5.0
-	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af
+	golang.org/x/time v0.3.0
 )
 
 require (
