@@ -1,5 +1,13 @@
 version: 2
 updates:
+  # Check for updates on our docker image and for celestia-node
+  - package-ecosystem: docker
+    directory: "/ops-bedrock"
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
@@ -7,6 +15,7 @@ updates:
     open-pull-requests-limit: 10
     labels:
       - dependencies
+  # Check for updates on celestia packages
   - package-ecosystem: gomod
     directory: "/"
     schedule:
