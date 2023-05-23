@@ -144,11 +144,13 @@ func DataFromEVMTransactions(config *rollup.Config, daCfg *rollup.DAConfig, batc
 					log.Warn("unable to decode data pointer", "index", j, "err", err)
 					continue
 				}
+				log.Warn("requesting celestia namespaced data", "namespace", daCfg.NamespaceId, "height", height)
 				data, err := daCfg.Client.NamespacedData(context.Background(), daCfg.NamespaceId, uint64(height))
 				if err != nil {
 					log.Warn("unable to retrieve data from da", "err", err)
 					return nil, err
 				}
+				log.Warn("retrieved data", "data", data)
 				out = append(out, data[index])
 			} else {
 				out = append(out, tx.Data())
