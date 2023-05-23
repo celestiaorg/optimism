@@ -29,7 +29,7 @@ RUN mkdir manifests && \
   cp .nvmrc ../manifests/
 
 FROM ethereumoptimism/foundry:latest as foundry
-FROM node:16-alpine3.14 as base
+FROM node:18-alpine3.14 as base
 
 # Base: install deps
 RUN apk --no-cache add curl \
