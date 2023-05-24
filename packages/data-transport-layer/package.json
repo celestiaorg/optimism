@@ -53,11 +53,11 @@
     "express": "^4.17.1",
     "express-prom-bundle": "^6.3.6",
     "level6": "npm:level@^6.0.1",
-    "levelup": "^4.4.0"
+    "levelup": "^5.1.1"
   },
   "devDependencies": {
     "@types/cors": "^2.8.9",
-    "@types/levelup": "^4.3.0",
+    "@types/levelup": "^5.1.2",
     "@types/level": "^6.0.1",
     "bfj": "^7.0.2",
     "chai-as-promised": "^7.1.1",
