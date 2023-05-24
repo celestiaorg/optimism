@@ -1,5 +1,6 @@
 version: 2
 updates:
+  # Check for updates on our docker image and for celestia-node
   - package-ecosystem: docker
     directory: "/ops-bedrock"
     schedule:
