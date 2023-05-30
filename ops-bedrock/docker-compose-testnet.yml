@@ -11,20 +11,6 @@ volumes:
 
 
 services:
-  da:
-    container_name: celestia-light-node
-    user: root
-    platform: "${PLATFORM}"
-    image: "ghcr.io/celestiaorg/celestia-node:v0.11.0-rc1"
-    command: celestia light start --core.ip https://rpc-arabica-8.consensus.celestia-arabica.com/ --gateway --gateway.addr da --gateway.port 26659 --p2p.network arabica
-    environment:
-      - NODE_TYPE=light
-      - P2P_NETWORK=arabica
-    volumes:
-      - $HOME/.celestia-light-arabica-6/:/home/celestia/.celestia-light-arabica-6/
-    ports:
-      - "26657:26657"
-      - "26659:26659"
 
   l1:
     build:
@@ -37,6 +23,8 @@ services:
       - "l1_data:/db"
       - "${PWD}/../.devnet/genesis-l1.json:/genesis.json"
       - "${PWD}/test-jwt-secret.txt:/config/test-jwt-secret.txt"
+    extra_hosts:
+    - "host.docker.internal:host-gateway"
 
   l2:
     build:
@@ -53,6 +41,8 @@ services:
       - "/bin/sh"
       - "/entrypoint.sh"
       - "--authrpc.jwtsecret=/config/test-jwt-secret.txt"
+    extra_hosts:
+    - "host.docker.internal:host-gateway"
 
   op-node:
     depends_on:
@@ -85,7 +75,7 @@ services:
       --metrics.port=7300
       --pprof.enabled
       --rpc.enable-admin
-      --da-rpc=http://da:26659
+      --da-rpc=http://host.docker.internal:26659
       --namespace-id=e8e5f679bf7116cb
     ports:
       - "7545:8545"
@@ -98,6 +88,8 @@ services:
       - "${PWD}/test-jwt-secret.txt:/config/test-jwt-secret.txt"
       - "${PWD}/../.devnet/rollup.json:/rollup.json"
       - op_log:/op_log
+    extra_hosts:
+    - "host.docker.internal:host-gateway"
 
   op-proposer:
     depends_on:
@@ -124,15 +116,16 @@ services:
       OP_PROPOSER_METRICS_ENABLED: "true"
       OP_PROPOSER_ALLOW_NON_FINALIZED: "false"
       OP_PROPOSER_NAMESPACE_ID: "e8e5f679bf7116cb"
-      OP_PROPOSER_DA_RPC: http://da:26659
+      OP_PROPOSER_DA_RPC: http://host.docker.internal:26659
       OP_PROPOSER_NETWORK_TIMEOUT: 180s
+    extra_hosts:
+    - "host.docker.internal:host-gateway"
 
   op-batcher:
     depends_on:
       - l1
       - l2
       - op-node
-      - da
     build:
       context: ../
       dockerfile: ./op-batcher/Dockerfile
@@ -141,7 +134,7 @@ services:
       - "7301:7300"
       - "6545:8545"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://da:26659/header/1"]
+      test: ["CMD", "curl", "-f", "http://host.docker.internal:26659/header/1"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -167,7 +160,9 @@ services:
       OP_BATCHER_METRICS_ENABLED: "true"
       OP_BATCHER_RPC_ENABLE_ADMIN: "true"
       OP_BATCHER_NAMESPACE_ID: "e8e5f679bf7116cb"
-      OP_BATCHER_DA_RPC: http://da:26659
+      OP_BATCHER_DA_RPC: http://host.docker.internal:26659
+    extra_hosts:
+    - "host.docker.internal:host-gateway"
 
   stateviz:
     build:
@@ -182,3 +177,5 @@ services:
       - "9090:8080"
     volumes:
       - op_log:/op_log:ro
+    extra_hosts:
+    - "host.docker.internal:host-gateway"
