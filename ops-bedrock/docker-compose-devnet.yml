@@ -83,7 +83,7 @@ services:
       --metrics.port=7300
       --pprof.enabled
       --rpc.enable-admin
-      --da-rpc=http://host.docker.internal:26659
+      --da-rpc=http://da:26659
       --namespace-id=e8e5f679bf7116cb
     ports:
       - "7545:8545"
