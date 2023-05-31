@@ -31,8 +31,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	namespaceId, _ := hex.DecodeString("e8e5f679bf7116cbe5f679ef")
-	var nid [8]byte
+	namespaceId, _ := hex.DecodeString("0000000000000000000000000000000000000000000000000000000000000000e8e5f679bf7116cb")
+	var nid [28]byte
 	copy(nid[:], namespaceId)
 	namespacedData, err := client.NamespacedData(context.Background(), nid, uint64(height))
 	if err != nil {
