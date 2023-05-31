@@ -114,7 +114,7 @@ func CLIFlags(envPrefix string) []cli.Flag {
 		cli.StringFlag{
 			Name:   NamespaceIdFlagName,
 			Usage:  "Namespace ID of the DA layer",
-			Value:  "0000000000000000000000000000000000000000000000000000000000000000e8e5f679bf7116cb",
+			Value:  "000008e5f679bf7116cb",
 			EnvVar: opservice.PrefixEnvVar(envPrefix, "NAMESPACE_ID"),
 		},
 	}, client.CLIFlags(envPrefix)...)
