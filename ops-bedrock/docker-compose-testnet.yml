@@ -20,11 +20,18 @@ services:
     environment:
       - NODE_TYPE=light
       - P2P_NETWORK=blockspacerace
+      - CELESTIA_NODE_AUTH_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6WyJwdWJsaWMiLCJyZWFkIiwid3JpdGUiLCJhZG1pbiJdfQ.SbLk75Rekk_c4Jp3QRY_wPc97pq3BL6hKERbNkJFc1U
     volumes:
       - $HOME/.celestia-light-blockspacerace-0/:/home/celestia/.celestia-light-blockspacerace-0/
     ports:
       - "26657:26657"
       - "26659:26659"
+    healthcheck:
+      test: ["CMD", "celestia", "--auth", "$$CELESTIA_NODE_AUTH_TOKEN", "rpc", "das", "WaitCatchUp"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   l1:
     build:
