@@ -19,10 +19,10 @@ services:
       - "26659:26659"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:26659/header/1"]
-      interval: 5s
+      interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 30s
 
   l1:
     build:
