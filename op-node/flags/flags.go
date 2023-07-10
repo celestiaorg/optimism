@@ -297,14 +297,16 @@ var (
 var requiredFlags = []cli.Flag{
 	L1NodeAddr,
 	L2EngineAddr,
+	RPCListenAddr,
+	RPCListenPort,
+	DaRPC,
+	NamespaceId,
 }
 
 var optionalFlags = []cli.Flag{
 	RPCListenAddr,
 	RPCListenPort,
 	RollupConfig,
-	DaRPC,
-	NamespaceId,
 	Network,
 	L1TrustRPC,
 	L1RPCProviderKind,
