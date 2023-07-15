@@ -15,8 +15,8 @@ services:
     container_name: celestia-light-node
     user: root
     platform: "${PLATFORM}"
-    image: "ghcr.io/celestiaorg/celestia-node:v0.11.0-rc6"
-    command: celestia light start --core.ip consensus-full-arabica-9.celestia-arabica.com --gateway --gateway.addr da --gateway.port 26659  --gateway.deprecated-endpoints --p2p.network arabica
+    image: "ghcr.io/celestiaorg/celestia-node:v0.11.0-rc8"
+    command: celestia light start --core.ip consensus-full-arabica-9.celestia-arabica.com --p2p.network arabica
     environment:
       - NODE_TYPE=light
       - P2P_NETWORK=arabica
