@@ -30,7 +30,7 @@ func main() {
 	}
 	fmt.Printf("celestia block height: %v; tx index: %v\n", height, index)
 	fmt.Println("-----------------------------------------")
-	client, err := openrpc.NewClient(context.Background(), "http://localhost:26659", os.Args[3])
+	client, err := openrpc.NewClient(context.Background(), "http://localhost:26658", os.Args[3])
 	if err != nil {
 		panic(err)
 	}
