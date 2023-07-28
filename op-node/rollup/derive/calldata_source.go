@@ -140,13 +140,14 @@ func DataFromEVMTransactions(config *rollup.Config, daCfg *rollup.DAConfig, batc
 			}
 
 			if daCfg != nil {
-				frameRef := celestia.DecodeFrameRef(tx.Data())
+				frameRef := celestia.FrameRef{}
+				frameRef.UnmarshalBinary(tx.Data())
 				if err != nil {
 					log.Warn("unable to decode frame reference", "index", j, "err", err)
 					return nil, err
 				}
-				log.Info("requesting data from celestia", "namespace", hex.EncodeToString(daCfg.Namespace), "height", frameRef.Height)
-				blob, err := daCfg.Client.Blob.Get(context.Background(), frameRef.Height, daCfg.Namespace, frameRef.Commitment)
+				log.Info("requesting data from celestia", "namespace", hex.EncodeToString(daCfg.Namespace), "height", frameRef.BlockHeight)
+				blob, err := daCfg.Client.Blob.Get(context.Background(), frameRef.BlockHeight, daCfg.Namespace, frameRef.TxCommitment)
 				if err != nil {
 					return nil, NewResetError(fmt.Errorf("failed to resolve frame from celestia: %w", err))
 				}

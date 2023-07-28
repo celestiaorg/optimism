@@ -240,10 +240,11 @@ func (m *SimpleTxManager) send(ctx context.Context, candidate TxCandidate) (*typ
 			return nil, errors.New("unexpected response code")
 		}
 		frameRef := celestia.FrameRef{
-			Height: height,
-			Commitment: com,
+			BlockHeight: height,
+			TxCommitment: com,
 		}
-		candidate = TxCandidate{TxData: celestia.EncodeFrameRef(frameRef), To: candidate.To, GasLimit: candidate.GasLimit}
+		frameRefData, _ := frameRef.MarshalBinary()
+		candidate = TxCandidate{TxData: frameRefData, To: candidate.To, GasLimit: candidate.GasLimit}
 	}
 
 	tx, err := m.craftTx(ctx, candidate)

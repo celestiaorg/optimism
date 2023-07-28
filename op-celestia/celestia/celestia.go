@@ -1,43 +1,50 @@
 package celestia
 
 import (
+	"encoding"
 	"encoding/binary"
 )
 
-// FrameRef contains the reference to the specific frame on celestia.
+// Framer defines a way to encode/decode a FrameRef.
+type Framer interface {
+  encoding.BinaryMarshaler
+  encoding.BinaryUnmarshaler
+}
+
+// FrameRef contains the reference to the specific frame on celestia and
+// satisfies the Framer interface.
 type FrameRef struct {
-	Height uint64
-	Commitment []byte
+	BlockHeight uint64
+	TxCommitment []byte
 }
 
-// DecodeFrameRef returns the celestia inclusion height and commitment from the
-// decoded frame reference.
-//
+var _ Framer = &FrameRef{}
+
+// MarshalBinary encodes the FrameRef to binary
 // serialization format: height + commitment
 //  ----------------------------------------
 // | 8 byte uint64  |  32 byte commitment   |
 //  ----------------------------------------
 // | <-- height --> | <-- commitment -->    |
 //  ----------------------------------------
-func DecodeFrameRef(ref []byte) FrameRef {
-  height := binary.LittleEndian.Uint64(ref[:8])
-  return FrameRef{height, ref[8:]}
+func (f *FrameRef) MarshalBinary() ([]byte, error){
+	ref := make([]byte, 8 + len(f.TxCommitment))
+
+	binary.LittleEndian.PutUint64(ref, f.BlockHeight)
+	copy(ref[8:], f.TxCommitment)
+
+  return ref, nil
 }
 
-// EncodeFrameRef returns the serialized frame reference from the celestia
-// inclusion height and commitment.
-//
+// UnmarshalBinary decodes the binary to FrameRef
 // serialization format: height + commitment
 //  ----------------------------------------
 // | 8 byte uint64  |  32 byte commitment   |
 //  ----------------------------------------
 // | <-- height --> | <-- commitment -->    |
 //  ----------------------------------------
-func EncodeFrameRef(frame FrameRef) []byte {
-	serialized := make([]byte, 8 + len(frame.Commitment))
-
-	binary.LittleEndian.PutUint64(serialized, frame.Height)
-	copy(serialized[8:], frame.Commitment)
-
-  	return serialized
+func (f *FrameRef) UnmarshalBinary(ref []byte) (error){
+  f.BlockHeight = binary.LittleEndian.Uint64(ref[:8])
+  f.TxCommitment = ref[8:]
+  return nil
 }
