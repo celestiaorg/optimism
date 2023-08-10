@@ -28,7 +28,7 @@ require (
 	github.com/multiformats/go-multiaddr-dns v0.3.1
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/prometheus/client_golang v1.14.0
-	github.com/rollkit/celestia-openrpc v0.1.3-0.20230810135937-aac73066e104
+	github.com/rollkit/celestia-openrpc v0.1.2
 	github.com/schollz/progressbar/v3 v3.13.0
 	github.com/stretchr/testify v1.8.4
 	github.com/urfave/cli v1.22.9
