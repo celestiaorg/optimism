@@ -229,6 +229,11 @@ func (m *SimpleTxManager) send(ctx context.Context, candidate TxCandidate) (*typ
 			m.l.Warn("unable to create blob commitment to celestia", "err", err)
 			return nil, err
 		}
+		err = m.daClient.DAS.WaitCatchUp(ctx)
+		if err != nil {
+			m.l.Warn("unable to wait for catchup to celestia", "err", err)
+			return nil, err
+		}
 		height, err := m.daClient.Blob.Submit(ctx, []*blob.Blob{dataBlob})
 		if err != nil {
 			m.l.Warn("unable to publish tx to celestia", "err", err)
