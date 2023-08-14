@@ -1,0 +1,10 @@
+# devnet.yml
+name: 'Celestia Devnet'
+description: 'Launch a local celestia devnet'
+runs:
+  using: 'docker'
+  image: 'ghcr.io/rollkit/local-celestia-devnet:v0.9.5'
+  ports:
+    - 26650:26657
+    - 26659:26659
+  options: --platform linux/amd64

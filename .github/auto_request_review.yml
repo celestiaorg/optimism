@@ -1,0 +1,18 @@
+reviewers:
+  defaults:
+    - code-owners
+  groups:
+    code-owners:
+      - tuxcanfly
+      - jcstein
+      - Ferret-san
+    celestia:
+      - team:celestia
+files:
+  '**':
+    - code-owners
+options:
+  ignore_draft: true
+  ignored_keywords:
+    - WIP
+  number_of_reviewers: 3

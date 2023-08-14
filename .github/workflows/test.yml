@@ -1,0 +1,28 @@
+name: Tests
+on:
+  workflow_call:
+    inputs:
+      GO_VERSION:
+        description: 'Go version to use'
+        type: string
+        required: true
+
+jobs:
+  integration_test:
+    name: Run Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: set up go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ inputs.GO_VERSION }}
+
+      - name: Integration Tests
+        run: |
+          cd op-e2e
+          docker run --platform linux/amd64 -p 26650:26657 -p 26659:26659 ghcr.io/rollkit/local-celestia-devnet:v0.9.5 & sleep 15
+          make test
+          docker stop $(docker ps -q --filter ancestor=ghcr.io/rollkit/local-celestia-devnet:v0.9.5)
+          cd ..
