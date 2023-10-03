@@ -618,7 +618,6 @@ func (cfg SystemConfig) Start(t *testing.T, _opts ...SystemConfigOption) (*Syste
 				l.Warn("closed op-node!")
 			}()
 		}
-		node, err := rollupNode.New(context.Background(), &c, l, snapLog, "", metrics.NewMetrics(""))
 
 		daCfg, err := rollup.NewDAConfig("http://127.0.0.1:26658", "0000e8e5f679bf7116cb", "")
 		if err != nil {

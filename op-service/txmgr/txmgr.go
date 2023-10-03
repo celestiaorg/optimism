@@ -17,12 +17,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/txpool"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
-	openrpc "github.com/rollkit/celestia-openrpc"
-	"github.com/rollkit/celestia-openrpc/types/blob"
-	openrpcns "github.com/rollkit/celestia-openrpc/types/namespace"
-	"github.com/rollkit/celestia-openrpc/types/share"
 
-	"github.com/ethereum-optimism/optimism/op-celestia/celestia"
+	"github.com/ethereum-optimism/optimism/op-service/retry"
 	"github.com/ethereum-optimism/optimism/op-service/txmgr/metrics"
 
 	"github.com/ethereum-optimism/optimism/op-celestia/celestia"
@@ -212,7 +208,7 @@ func (m *SimpleTxManager) send(ctx context.Context, candidate TxCandidate) (*typ
 	// writes to a smart contract, we overwrite _only_ batcher candidate as the
 	// frame pointer to celestia, while retaining the proposer pathway that
 	// writes the state commitment data to ethereum.
-	if candidate.To.Hex() == "0xfF00000000000000000000000000000000000000" {
+	if candidate.To.Hex() == "0xFf00000000000000000000000000000000000901" {
 		dataBlob, err := blob.NewBlobV0(m.namespace.Bytes(), candidate.TxData)
 		com, err := blob.CreateCommitment(dataBlob)
 		if err != nil {
@@ -229,7 +225,6 @@ func (m *SimpleTxManager) send(ctx context.Context, candidate TxCandidate) (*typ
 			m.l.Warn("unable to publish tx to celestia", "err", err)
 			return nil, err
 		}
-		fmt.Printf("height: %v\n", height)
 		if height == 0 {
 			m.l.Warn("unexpected response from celestia got", "height", height)
 			return nil, errors.New("unexpected response code")
@@ -239,7 +234,8 @@ func (m *SimpleTxManager) send(ctx context.Context, candidate TxCandidate) (*typ
 			TxCommitment: com,
 		}
 		frameRefData, _ := frameRef.MarshalBinary()
-		candidate = TxCandidate{TxData: frameRefData, To: candidate.To, GasLimit: candidate.GasLimit}
+		candidate.TxData = frameRefData
+		m.l.Info("submitting txdata", "celestia height", height, "txdata", hex.EncodeToString(frameRefData))
 	}
 	tx, err := retry.Do(ctx, 30, retry.Fixed(2*time.Second), func() (*types.Transaction, error) {
 		tx, err := m.craftTx(ctx, candidate)

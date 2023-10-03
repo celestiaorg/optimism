@@ -50,7 +50,7 @@ func RunProgram(logger log.Logger, preimageOracle io.ReadWriter, preimageHinter 
 	logger.Info("Program Bootstrapped", "bootInfo", bootInfo)
 	return runDerivation(
 		logger,
-		bootInfo.Rollup,
+		bootInfo.RollupConfig,
 		bootInfo.DAConfig,
 		bootInfo.L2ChainConfig,
 		bootInfo.L1Head,
@@ -63,7 +63,7 @@ func RunProgram(logger log.Logger, preimageOracle io.ReadWriter, preimageHinter 
 }
 
 // runDerivation executes the L2 state transition, given a minimal interface to retrieve data.
-func runDerivation(logger log.Logger, cfg *rollup.Config, l2Cfg *params.ChainConfig, l1Head common.Hash, l2OutputRoot common.Hash, l2Claim common.Hash, l2ClaimBlockNum uint64, l1Oracle l1.Oracle, l2Oracle l2.Oracle) error {
+func runDerivation(logger log.Logger, cfg *rollup.Config, daCfg *rollup.DAConfig, l2Cfg *params.ChainConfig, l1Head common.Hash, l2OutputRoot common.Hash, l2Claim common.Hash, l2ClaimBlockNum uint64, l1Oracle l1.Oracle, l2Oracle l2.Oracle) error {
 	l1Source := l1.NewOracleL1Client(logger, l1Oracle, l1Head)
 	engineBackend, err := l2.NewOracleBackedL2Chain(logger, l2Oracle, l2Cfg, l2OutputRoot)
 	if err != nil {

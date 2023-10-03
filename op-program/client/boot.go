@@ -36,6 +36,7 @@ type BootInfo struct {
 
 	L2ChainConfig *params.ChainConfig
 	RollupConfig  *rollup.Config
+	DAConfig      *rollup.DAConfig
 }
 
 type oracleClient interface {

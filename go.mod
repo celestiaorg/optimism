@@ -6,9 +6,7 @@ require (
 	github.com/BurntSushi/toml v1.3.2
 	github.com/btcsuite/btcd v0.23.3
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1
-	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0
-	github.com/docker/docker v24.0.2+incompatible
-	github.com/docker/go-connections v0.4.0
+	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0
 	github.com/ethereum-optimism/go-ethereum-hdwallet v0.1.3
 	github.com/ethereum-optimism/superchain-registry/superchain v0.0.0-20231030223232-e16eae11e492
 	github.com/ethereum/go-ethereum v1.13.1
@@ -109,7 +107,6 @@ require (
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
-	github.com/go-resty/resty/v2 v2.7.0 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20230315185526-52ccab3ef572 // indirect

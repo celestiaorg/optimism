@@ -23,59 +23,44 @@ func prefixEnvVars(name string) []string {
 
 var (
 	/* Required Flags */
-	L1NodeAddr = cli.StringFlag{
-		Name:   "l1",
-		Usage:  "Address of L1 User JSON-RPC endpoint to use (eth namespace required)",
-		Value:  "http://127.0.0.1:8545",
-		EnvVar: prefixEnvVar("L1_ETH_RPC"),
+	L1NodeAddr = &cli.StringFlag{
+		Name:    "l1",
+		Usage:   "Address of L1 User JSON-RPC endpoint to use (eth namespace required)",
+		Value:   "http://127.0.0.1:8545",
+		EnvVars: prefixEnvVars("L1_ETH_RPC"),
 	}
-	L2EngineAddr = cli.StringFlag{
-		Name:   "l2",
-		Usage:  "Address of L2 Engine JSON-RPC endpoints to use (engine and eth namespace required)",
-		EnvVar: prefixEnvVar("L2_ENGINE_RPC"),
+	L2EngineAddr = &cli.StringFlag{
+		Name:    "l2",
+		Usage:   "Address of L2 Engine JSON-RPC endpoints to use (engine and eth namespace required)",
+		EnvVars: prefixEnvVars("L2_ENGINE_RPC"),
 	}
-	RollupConfig = cli.StringFlag{
-		Name:   "rollup.config",
-		Usage:  "Rollup chain parameters",
-		EnvVar: prefixEnvVar("ROLLUP_CONFIG"),
+	RollupConfig = &cli.StringFlag{
+		Name:    "rollup.config",
+		Usage:   "Rollup chain parameters",
+		EnvVars: prefixEnvVars("ROLLUP_CONFIG"),
 	}
-	DaRPC = cli.StringFlag{
-		Name:   "da-rpc",
-		Usage:  "Data Availability RPC",
-		Value:  "http://da:26658",
-		EnvVar: prefixEnvVar("DA_RPC"),
+	DaRPC = &cli.StringFlag{
+		Name:    "da-rpc",
+		Usage:   "Data Availability RPC",
+		Value:   "http://da:26658",
+		EnvVars: prefixEnvVars("DA_RPC"),
 	}
-	NamespaceId = cli.StringFlag{
-		Name:   "namespace-id",
-		Usage:  "Namespace ID for DA node",
-		Value:  "000008e5f679bf7116cb",
-		EnvVar: prefixEnvVar("NAMESPACE_ID"),
+	NamespaceId = &cli.StringFlag{
+		Name:    "namespace-id",
+		Usage:   "Namespace ID for DA node",
+		Value:   "000008e5f679bf7116cb",
+		EnvVars: prefixEnvVars("NAMESPACE_ID"),
 	}
-	AuthToken = cli.StringFlag{
-		Name: "auth-token",
-		Usage: "Authentication Token for DA node",
-		Value: "",
-		EnvVar: prefixEnvVar("AUTH_TOKEN"),
+	AuthToken = &cli.StringFlag{
+		Name:    "auth-token",
+		Usage:   "Authentication Token for DA node",
+		Value:   "",
+		EnvVars: prefixEnvVars("AUTH_TOKEN"),
 	}
-	Network = cli.StringFlag{
-		Name:   "network",
-		Usage:  fmt.Sprintf("Predefined network selection. Available networks: %s", strings.Join(chaincfg.AvailableNetworks(), ", ")),
-		EnvVar: prefixEnvVar("NETWORK"),
-	}
-	RPCListenAddr = cli.StringFlag{
-		Name:   "rpc.addr",
-		Usage:  "RPC listening address",
-		EnvVar: prefixEnvVar("RPC_ADDR"),
-	}
-	RPCListenPort = cli.IntFlag{
-		Name:   "rpc.port",
-		Usage:  "RPC listening port",
-		EnvVar: prefixEnvVar("RPC_PORT"),
-	}
-	RPCEnableAdmin = cli.BoolFlag{
-		Name:   "rpc.enable-admin",
-		Usage:  "Enable the admin API (experimental)",
-		EnvVar: prefixEnvVar("RPC_ENABLE_ADMIN"),
+	Network = &cli.StringFlag{
+		Name:    "network",
+		Usage:   fmt.Sprintf("Predefined network selection. Available networks: %s", strings.Join(chaincfg.AvailableNetworks(), ", ")),
+		EnvVars: prefixEnvVars("NETWORK"),
 	}
 	/* Optional Flags */
 	RPCListenAddr = &cli.StringFlag{
@@ -303,8 +288,6 @@ var (
 var requiredFlags = []cli.Flag{
 	L1NodeAddr,
 	L2EngineAddr,
-	RPCListenAddr,
-	RPCListenPort,
 	DaRPC,
 	NamespaceId,
 	AuthToken,

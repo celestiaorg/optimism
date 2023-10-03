@@ -374,8 +374,9 @@ func (l *L2OutputSubmitter) sendTransaction(ctx context.Context, output *eth.Out
 		return err
 	}
 	receipt, err := l.txMgr.Send(ctx, txmgr.TxCandidate{
-		TxData: data,
-		To:     &l.l2ooContractAddr,
+		TxData:   data,
+		To:       &l.l2ooContractAddr,
+		GasLimit: 0,
 	})
 	if err != nil {
 		return err

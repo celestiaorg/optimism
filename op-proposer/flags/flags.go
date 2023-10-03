@@ -37,12 +37,7 @@ var (
 		Usage:   "Address of the L2OutputOracle contract",
 		EnvVars: prefixEnvVars("L2OO_ADDRESS"),
 	}
-	DaRpcFlag = cli.StringFlag{
-		Name:     "da-rpc",
-		Usage:    "HTTP provider URL for DA node",
-		Required: true,
-		EnvVar:   opservice.PrefixEnvVar(envVarPrefix, "DA_RPC"),
-	}
+
 	// Optional flags
 	PollIntervalFlag = &cli.DurationFlag{
 		Name:    "poll-interval",
@@ -63,8 +58,6 @@ var requiredFlags = []cli.Flag{
 	L1EthRpcFlag,
 	RollupRpcFlag,
 	L2OOAddressFlag,
-	PollIntervalFlag,
-	DaRpcFlag,
 }
 
 var optionalFlags = []cli.Flag{
