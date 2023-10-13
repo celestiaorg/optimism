@@ -16,3 +16,4 @@ jobs:
           owner: ethereum-optimism
           base: celesita-develop
           head: develop
+          token: ${{ secrets.REPO_PAT }}
