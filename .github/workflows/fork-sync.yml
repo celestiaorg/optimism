@@ -13,7 +13,6 @@ jobs:
     steps:
       - uses: tgymnich/fork-sync@v1.8
         with:
-          owner: ethereum-optimism
-          base: celesita-develop
+          base: celestia-develop
           head: develop
           token: ${{ secrets.REPO_PAT }}
