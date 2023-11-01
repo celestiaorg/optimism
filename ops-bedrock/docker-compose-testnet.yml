@@ -16,7 +16,7 @@ services:
     user: root
     platform: "${PLATFORM}"
     image: "ghcr.io/celestiaorg/celestia-node:v0.11.0"
-    command: celestia light start --core.ip rpc-mocha.pops.one --p2p.network mocha --log.level debug
+    command: celestia light start --core.ip rpc-mocha.pops.one --p2p.network mocha --log.level debug --gateway
     environment:
       - NODE_TYPE=light
       - P2P_NETWORK=mocha
@@ -132,10 +132,11 @@ services:
       OP_PROPOSER_L2OO_ADDRESS: "${L2OO_ADDRESS}"
       OP_PROPOSER_PPROF_ENABLED: "true"
       OP_PROPOSER_METRICS_ENABLED: "true"
-      OP_PROPOSER_ALLOW_NON_FINALIZED: "false"
+      OP_PROPOSER_ALLOW_NON_FINALIZED: "true"
       OP_PROPOSER_NAMESPACE_ID: "000008e5f679bf7116cb"
       OP_PROPOSER_DA_RPC: http://da:26659
       OP_PROPOSER_NETWORK_TIMEOUT: 180s
+      OP_PROPOSER_LOG_LEVEL: "debug"
 
   op-batcher:
     depends_on:
@@ -179,6 +180,7 @@ services:
       OP_BATCHER_NAMESPACE_ID: "000008e5f679bf7116cb"
       OP_BATCHER_DA_RPC: http://da:26658
       OP_BATCHER_AUTH_TOKEN: $CELESTIA_NODE_AUTH_TOKEN
+      OP_BATCHER_LOG_LEVEL: "debug"
 
   stateviz:
     build:

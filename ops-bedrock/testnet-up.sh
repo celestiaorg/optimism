@@ -101,9 +101,9 @@ L2OO_ADDRESS="0x6900000000000000000000000000000000000000"
 (
   cd ops-bedrock
   echo "Bringing up devnet..."
-  docker-compose -f docker-compose-devnet.yml up -d da
+  docker-compose -f docker-compose-testnet.yml up -d da
   wait_up http://localhost:26659/header/1
-  export CELESTIA_NODE_AUTH_TOKEN="$(celestia light auth admin --node.store $HOME/.celestia-light-mocha-4/)"
+  export CELESTIA_NODE_AUTH_TOKEN="$(docker exec ops-bedrock_da_1 celestia light auth admin --node.store /home/celestia/.celestia-light-mocha-4/)"
   echo "CELESTIA_NODE_AUTH_TOKEN=$CELESTIA_NODE_AUTH_TOKEN"
   L2OO_ADDRESS="$L2OO_ADDRESS" \
       docker-compose -f docker-compose-testnet.yml up -d op-proposer op-batcher
