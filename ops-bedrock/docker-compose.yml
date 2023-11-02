@@ -22,7 +22,7 @@ services:
     entrypoint: ["echo", "build complete"]
   da:
     platform: linux/x86_64
-    image: "ghcr.io/rollkit/local-celestia-devnet:v0.11.0-rc12"
+    image: "ghcr.io/rollkit/local-celestia-devnet:v0.11.0"
     ports:
       - "26657:26657"
       - "26658:26658"
@@ -72,6 +72,7 @@ services:
       - op_stack_go_builder
       - l1
       - l2
+      - da
     build:
       context: ../
       dockerfile: ./op-node/Dockerfile
@@ -147,14 +148,13 @@ services:
       OP_PROPOSER_METRICS_ENABLED: "true"
       OP_PROPOSER_ALLOW_NON_FINALIZED: "true"
       OP_PROPOSER_RPC_ENABLE_ADMIN: "true"
-      OP_PROPOSER_NAMESPACE_ID: "e8e5f679bf7116cb"
-      OP_PROPOSER_DA_RPC: http://da:26659
-      OP_PROPOSER_ALLOW_NON_FINALIZED: "false"
       OP_PROPOSER_DA_RPC: "http://da:26658"
       OP_PROPOSER_AUTH_TOKEN: $CELESTIA_NODE_AUTH_TOKEN
 
   op-batcher:
     depends_on:
+      op_stack_go_builder:
+        condition: service_started
       l1:
         condition: service_started
       l2:
@@ -188,8 +188,6 @@ services:
       OP_BATCHER_METRICS_ENABLED: "true"
       OP_BATCHER_RPC_ENABLE_ADMIN: "true"
       OP_BATCHER_BATCH_TYPE: 0
-      OP_BATCHER_NAMESPACE_ID: "e8e5f679bf7116cb"
-      OP_BATCHER_DA_RPC: http://da:26659
       OP_BATCHER_NAMESPACE_ID: "000008e5f679bf7116cb"
       OP_BATCHER_DA_RPC: http://da:26658
       OP_BATCHER_AUTH_TOKEN: $CELESTIA_NODE_AUTH_TOKEN
