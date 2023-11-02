@@ -249,11 +249,14 @@ def devnet_deploy(paths):
     run_command(['docker', 'compose', 'up', '-d', 'da'], cwd=paths.ops_bedrock_dir, env={
         'PWD': paths.ops_bedrock_dir,
     })
-    log.info('Bringing up `op-node`, `op-proposer` and `op-batcher`.')
+    wait_up(26658)
+    wait_for_rpc_server('127.0.0.1:26658', method="p2p.Info")
+
     result = run_command(["docker", "exec", "ops-bedrock-da-1", "celestia", "bridge", "auth", "admin", "--node.store", "/home/celestia/bridge"],
         cwd=paths.ops_bedrock_dir, capture_output=True,
     )
     auth_token = result.stdout
+    log.info('Bringing up `op-node`, `op-proposer` and `op-batcher`.')
     run_command(["docker", "compose", "up", "-d", "op-node", "op-proposer", "op-batcher"], cwd=paths.ops_bedrock_dir,
         env={
             "PWD": paths.ops_bedrock_dir,
@@ -296,11 +299,11 @@ def debug_dumpBlock(url):
     return data
 
 
-def wait_for_rpc_server(url):
+def wait_for_rpc_server(url, method="eth_chainId"):
     log.info(f'Waiting for RPC server at {url}')
 
     headers = {'Content-type': 'application/json'}
-    body = '{"id":1, "jsonrpc":"2.0", "method": "eth_chainId", "params":[]}'
+    body = f'{{"id":1, "jsonrpc":"2.0", "method": "{method}", "params":[]}}'
 
     while True:
         try:
