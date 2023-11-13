@@ -39,23 +39,23 @@ var (
 		Usage:   "Rollup chain parameters",
 		EnvVars: prefixEnvVars("ROLLUP_CONFIG"),
 	}
-	DaRPC = &cli.StringFlag{
-		Name:    "da-rpc",
+	DataAvailabilityRPC = &cli.StringFlag{
+		Name:    "da.rpc",
 		Usage:   "Data Availability RPC",
 		Value:   "http://da:26658",
 		EnvVars: prefixEnvVars("DA_RPC"),
 	}
-	NamespaceId = &cli.StringFlag{
-		Name:    "namespace-id",
-		Usage:   "Namespace ID for DA node",
-		Value:   "000008e5f679bf7116cb",
-		EnvVars: prefixEnvVars("NAMESPACE_ID"),
-	}
-	AuthToken = &cli.StringFlag{
-		Name:    "auth-token",
-		Usage:   "Authentication Token for DA node",
+	DataAvailabilityNamespaceId = &cli.StringFlag{
+		Name:    "da.namespace-id",
+		Usage:   "Data Availability Namespace ID",
 		Value:   "",
-		EnvVars: prefixEnvVars("AUTH_TOKEN"),
+		EnvVars: prefixEnvVars("DA_NAMESPACE_ID"),
+	}
+	DataAvailabilityAuthToken = &cli.StringFlag{
+		Name:    "da.auth-token",
+		Usage:   "Data Availability RPC Authentication Token",
+		Value:   "",
+		EnvVars: prefixEnvVars("DA_AUTH_TOKEN"),
 	}
 	Network = &cli.StringFlag{
 		Name:    "network",
@@ -288,9 +288,9 @@ var (
 var requiredFlags = []cli.Flag{
 	L1NodeAddr,
 	L2EngineAddr,
-	DaRPC,
-	NamespaceId,
-	AuthToken,
+	DataAvailabilityRPC,
+	DataAvailabilityNamespaceId,
+	DataAvailabilityAuthToken,
 }
 
 var optionalFlags = []cli.Flag{

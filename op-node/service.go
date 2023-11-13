@@ -70,10 +70,12 @@ func NewConfig(ctx *cli.Context, log log.Logger) (*node.Config, error) {
 	if haltOption == "none" {
 		haltOption = ""
 	}
-	daCfg, err := rollup.NewDAConfig(flags.DaRPC.Value, flags.AuthToken.Value, flags.NamespaceId.Value)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load da config: %w", err)
-	}
+	daCfg := rollup.NewDAConfig(
+		ctx.String(flags.DataAvailabilityRPC.Name),
+		ctx.String(flags.DataAvailabilityNamespaceId.Name),
+		ctx.String(flags.DataAvailabilityAuthToken.Name),
+	)
+	fmt.Println("data availability config: %s %s %s", daCfg.RPC, daCfg.NamespaceID, daCfg.AuthToken)
 
 	cfg := &node.Config{
 		L1:       l1Endpoint,

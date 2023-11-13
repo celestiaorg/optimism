@@ -69,20 +69,22 @@ func (n *adminAPI) SequencerActive(ctx context.Context) (bool, error) {
 }
 
 type nodeAPI struct {
-	config *rollup.Config
-	client l2EthClient
-	dr     driverClient
-	log    log.Logger
-	m      metrics.RPCMetricer
+	config   *rollup.Config
+	daConfig *rollup.DAConfig
+	client   l2EthClient
+	dr       driverClient
+	log      log.Logger
+	m        metrics.RPCMetricer
 }
 
-func NewNodeAPI(config *rollup.Config, l2Client l2EthClient, dr driverClient, log log.Logger, m metrics.RPCMetricer) *nodeAPI {
+func NewNodeAPI(config *rollup.Config, daConfig *rollup.DAConfig, l2Client l2EthClient, dr driverClient, log log.Logger, m metrics.RPCMetricer) *nodeAPI {
 	return &nodeAPI{
-		config: config,
-		client: l2Client,
-		dr:     dr,
-		log:    log,
-		m:      m,
+		config:   config,
+		daConfig: daConfig,
+		client:   l2Client,
+		dr:       dr,
+		log:      log,
+		m:        m,
 	}
 }
 
@@ -119,6 +121,12 @@ func (n *nodeAPI) RollupConfig(_ context.Context) (*rollup.Config, error) {
 	recordDur := n.m.RecordRPCServerRequest("optimism_rollupConfig")
 	defer recordDur()
 	return n.config, nil
+}
+
+func (n *nodeAPI) DataAvailabilityConfig(_ context.Context) (*rollup.DAConfig, error) {
+	recordDur := n.m.RecordRPCServerRequest("optimism_dataAvailabilityConfig")
+	defer recordDur()
+	return n.daConfig, nil
 }
 
 func (n *nodeAPI) Version(ctx context.Context) (string, error) {

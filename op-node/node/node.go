@@ -336,7 +336,7 @@ func (n *OpNode) initRPCSync(ctx context.Context, cfg *Config) error {
 }
 
 func (n *OpNode) initRPCServer(ctx context.Context, cfg *Config) error {
-	server, err := newRPCServer(ctx, &cfg.RPC, &cfg.Rollup, n.l2Source.L2Client, n.l2Driver, n.log, n.appVersion, n.metrics)
+	server, err := newRPCServer(ctx, &cfg.RPC, &cfg.Rollup, &cfg.DAConfig, n.l2Source.L2Client, n.l2Driver, n.log, n.appVersion, n.metrics)
 	if err != nil {
 		return err
 	}

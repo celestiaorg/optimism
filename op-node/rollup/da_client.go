@@ -8,17 +8,17 @@ import (
 	"github.com/rollkit/celestia-openrpc/types/share"
 )
 
-type DAConfig struct {
+type DAClient struct {
 	Rpc       string
 	Namespace share.Namespace
 	Client    *openrpc.Client
 	AuthToken string
 }
 
-func NewDAConfig(rpc, token, ns string) (*DAConfig, error) {
-	nsBytes, err := hex.DecodeString(ns)
+func NewDAClient(cfg *DAConfig) (*DAClient, error) {
+	nsBytes, err := hex.DecodeString(cfg.NamespaceID)
 	if err != nil {
-		return &DAConfig{}, err
+		return &DAClient{}, err
 	}
 
 	namespace, err := share.NewBlobNamespaceV0(nsBytes)
@@ -26,14 +26,14 @@ func NewDAConfig(rpc, token, ns string) (*DAConfig, error) {
 		return nil, err
 	}
 
-	client, err := openrpc.NewClient(context.Background(), rpc, token)
+	client, err := openrpc.NewClient(context.Background(), cfg.RPC, cfg.AuthToken)
 	if err != nil {
-		return &DAConfig{}, err
+		return &DAClient{}, err
 	}
 
-	return &DAConfig{
+	return &DAClient{
 		Namespace: namespace,
-		Rpc:       rpc,
+		Rpc:       cfg.RPC,
 		Client:    client,
 	}, nil
 }

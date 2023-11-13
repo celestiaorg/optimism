@@ -36,6 +36,23 @@ var (
 	ErrL2ChainIDNotPositive          = errors.New("L2 chain ID must be non-zero and positive")
 )
 
+type DAConfig struct {
+	// RPC is the rpc address of the Data Availability server
+	RPC string `json:"rpc"`
+	// NamespaceID is the namespace identifier
+	NamespaceID string `json:"namespace_id"`
+	// Auth Token is the authentication token of the Data Availability server
+	AuthToken string `json:"auth_token"`
+}
+
+func NewDAConfig(rpc, ns, token string) *DAConfig {
+	return &DAConfig{
+		RPC:         rpc,
+		NamespaceID: ns,
+		AuthToken:   token,
+	}
+}
+
 type Genesis struct {
 	// The L1 block that the rollup starts *after* (no derived transactions)
 	L1 eth.BlockID `json:"l1"`

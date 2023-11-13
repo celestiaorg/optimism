@@ -46,6 +46,7 @@ type BatcherService struct {
 	BatcherConfig
 
 	RollupConfig *rollup.Config
+	DAConfig     *rollup.DAConfig
 
 	// Channel builder parameters
 	ChannelConfig ChannelConfig
@@ -92,6 +93,9 @@ func (bs *BatcherService) initFromCLIConfig(ctx context.Context, version string,
 	}
 	if err := bs.initRollupConfig(ctx); err != nil {
 		return fmt.Errorf("failed to load rollup config: %w", err)
+	}
+	if err := bs.initDAConfig(ctx); err != nil {
+		return fmt.Errorf("failed to load da config: %w", err)
 	}
 	if err := bs.initChannelConfig(cfg); err != nil {
 		return fmt.Errorf("failed to init channel config: %w", err)
@@ -165,6 +169,15 @@ func (bs *BatcherService) initRollupConfig(ctx context.Context) error {
 	return nil
 }
 
+func (bs *BatcherService) initDAConfig(ctx context.Context) error {
+	daConfig, err := bs.RollupNode.DataAvailabilityConfig(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to retrieve da config: %w", err)
+	}
+	bs.DAConfig = daConfig
+	return nil
+}
+
 func (bs *BatcherService) initChannelConfig(cfg *CLIConfig) error {
 	bs.ChannelConfig = ChannelConfig{
 		SeqWindowSize:      bs.RollupConfig.SeqWindowSize,
@@ -228,6 +241,7 @@ func (bs *BatcherService) initDriver() {
 		Log:           bs.Log,
 		Metr:          bs.Metrics,
 		RollupConfig:  bs.RollupConfig,
+		DAConfig:      bs.DAConfig,
 		Config:        bs.BatcherConfig,
 		Txmgr:         bs.TxManager,
 		L1Client:      bs.L1Client,

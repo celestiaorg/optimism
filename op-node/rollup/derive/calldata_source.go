@@ -52,11 +52,11 @@ type DataSource struct {
 	open bool
 	data []eth.Data
 	// Required to re-attempt fetching
-	id      eth.BlockID
-	cfg     *rollup.Config // TODO: `DataFromEVMTransactions` should probably not take the full config
-	daCfg   *rollup.DAConfig
-	fetcher L1TransactionFetcher
-	log     log.Logger
+	id       eth.BlockID
+	cfg      *rollup.Config // TODO: `DataFromEVMTransactions` should probably not take the full config
+	daClient *rollup.DAClient
+	fetcher  L1TransactionFetcher
+	log      log.Logger
 
 	batcherAddr common.Address
 }
@@ -64,23 +64,29 @@ type DataSource struct {
 // NewDataSource creates a new calldata source. It suppresses errors in fetching the L1 block if they occur.
 // If there is an error, it will attempt to fetch the result on the next call to `Next`.
 func NewDataSource(ctx context.Context, log log.Logger, cfg *rollup.Config, daCfg *rollup.DAConfig, fetcher L1TransactionFetcher, block eth.BlockID, batcherAddr common.Address) (DataIter, error) {
+	daClient, err := rollup.NewDAClient(daCfg)
+	if err != nil {
+		return nil, err
+	}
 	_, txs, err := fetcher.InfoAndTxsByHash(ctx, block.Hash)
 	if err != nil {
 		return &DataSource{
 			open:        false,
 			id:          block,
 			cfg:         cfg,
+			daClient:    daClient,
 			fetcher:     fetcher,
 			log:         log,
 			batcherAddr: batcherAddr,
 		}, nil
 	} else {
-		data, err := DataFromEVMTransactions(cfg, daCfg, batcherAddr, txs, log.New("origin", block))
+		data, err := DataFromEVMTransactions(cfg, daClient, batcherAddr, txs, log.New("origin", block))
 		if err != nil {
 			return &DataSource{
 				open:        false,
 				id:          block,
 				cfg:         cfg,
+				daClient:    daClient,
 				fetcher:     fetcher,
 				log:         log,
 				batcherAddr: batcherAddr,
@@ -100,7 +106,7 @@ func (ds *DataSource) Next(ctx context.Context) (eth.Data, error) {
 	if !ds.open {
 		if _, txs, err := ds.fetcher.InfoAndTxsByHash(ctx, ds.id.Hash); err == nil {
 			ds.open = true
-			ds.data, err = DataFromEVMTransactions(ds.cfg, ds.daCfg, ds.batcherAddr, txs, log.New("origin", ds.id))
+			ds.data, err = DataFromEVMTransactions(ds.cfg, ds.daClient, ds.batcherAddr, txs, log.New("origin", ds.id))
 			if err != nil {
 				// already wrapped
 				return nil, err
@@ -123,7 +129,7 @@ func (ds *DataSource) Next(ctx context.Context) (eth.Data, error) {
 // DataFromEVMTransactions filters all of the transactions and returns the calldata from transactions
 // that are sent to the batch inbox address from the batch sender address.
 // This will return an empty array if no valid transactions are found.
-func DataFromEVMTransactions(config *rollup.Config, daCfg *rollup.DAConfig, batcherAddr common.Address, txs types.Transactions, log log.Logger) ([]eth.Data, error) {
+func DataFromEVMTransactions(config *rollup.Config, daClient *rollup.DAClient, batcherAddr common.Address, txs types.Transactions, log log.Logger) ([]eth.Data, error) {
 	var out []eth.Data
 	l1Signer := config.L1Signer()
 	for j, tx := range txs {
@@ -139,22 +145,18 @@ func DataFromEVMTransactions(config *rollup.Config, daCfg *rollup.DAConfig, batc
 				continue // not an authorized batch submitter, ignore
 			}
 
-			if daCfg != nil {
-				frameRef := celestia.FrameRef{}
-				frameRef.UnmarshalBinary(tx.Data())
-				if err != nil {
-					log.Warn("unable to decode frame reference", "index", j, "err", err)
-					return nil, err
-				}
-				log.Info("requesting data from celestia", "namespace", hex.EncodeToString(daCfg.Namespace), "height", frameRef.BlockHeight)
-				blob, err := daCfg.Client.Blob.Get(context.Background(), frameRef.BlockHeight, daCfg.Namespace, frameRef.TxCommitment)
-				if err != nil {
-					return nil, NewResetError(fmt.Errorf("failed to resolve frame from celestia: %w", err))
-				}
-				out = append(out, blob.Data)
-			} else {
-				out = append(out, tx.Data())
+			frameRef := celestia.FrameRef{}
+			frameRef.UnmarshalBinary(tx.Data())
+			if err != nil {
+				log.Warn("unable to decode frame reference", "index", j, "err", err)
+				return nil, err
 			}
+			log.Info("requesting data from celestia", "namespace", hex.EncodeToString(daClient.Namespace), "height", frameRef.BlockHeight)
+			blob, err := daClient.Client.Blob.Get(context.Background(), frameRef.BlockHeight, daClient.Namespace, frameRef.TxCommitment)
+			if err != nil {
+				return nil, NewResetError(fmt.Errorf("failed to resolve frame from celestia: %w", err))
+			}
+			out = append(out, blob.Data)
 		}
 	}
 	return out, nil
