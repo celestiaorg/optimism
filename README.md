@@ -66,7 +66,7 @@ Celestia as the data availability (DA) layer.
 Currently, the tests assume a working [Celestia devnet](https://github.com/rollkit/local-celestia-devnet) running locally:
 
 ```bash
-docker run --platform linux/amd64 -p 26658:26658 ghcr.io/rollkit/local-celestia-devnet:v0.11.0-rc8
+docker run --platform linux/amd64 -p 26658:26658 ghcr.io/rollkit/local-celestia-devnet:v0.12.1
 ```
 
 The e2e tests can be triggered with:
