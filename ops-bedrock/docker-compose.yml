@@ -22,7 +22,7 @@ services:
     entrypoint: ["echo", "build complete"]
   da:
     platform: linux/x86_64
-    image: "ghcr.io/rollkit/local-celestia-devnet:v0.11.0"
+    image: "ghcr.io/rollkit/local-celestia-devnet:v0.12.1"
     ports:
       - "26657:26657"
       - "26658:26658"
