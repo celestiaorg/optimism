@@ -6,7 +6,7 @@
   <br />
   <h3>+</h3>
   <a href="https://celestia.org"><img alt="Celestia" src="docs/op-stack/src/assets/docs/understand/Celestia-logo-color-color.svg" width=600></a>
-  <h3><a href="https://celestia.org">Celestia</a> is a modular consensus and data network, built to enable anyone to easily deploy their own blockchain with minimal overhead.</h3>
+  <h3><a href="https://celestia.org">Celestia</a> is a modular data availability network that securely scales with the number of users, making it easy for anyone to launch their own blockchain.</h3>
   <br />
 </div>
 
