@@ -39,17 +39,11 @@ var (
 type DAConfig struct {
 	// RPC is the rpc address of the Data Availability server
 	RPC string `json:"rpc"`
-	// NamespaceID is the namespace identifier
-	NamespaceID string `json:"namespace_id"`
-	// Auth Token is the authentication token of the Data Availability server
-	AuthToken string `json:"auth_token"`
 }
 
-func NewDAConfig(rpc, ns, token string) *DAConfig {
+func NewDAConfig(rpc string) *DAConfig {
 	return &DAConfig{
-		RPC:         rpc,
-		NamespaceID: ns,
-		AuthToken:   token,
+		RPC: rpc,
 	}
 }
 

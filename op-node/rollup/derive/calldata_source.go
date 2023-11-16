@@ -2,7 +2,6 @@ package derive
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -12,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 
-	"github.com/ethereum-optimism/optimism/op-celestia/celestia"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
 	"github.com/ethereum-optimism/optimism/op-service/eth"
 )
@@ -144,19 +142,11 @@ func DataFromEVMTransactions(config *rollup.Config, daClient *rollup.DAClient, b
 				log.Warn("tx in inbox with unauthorized submitter", "index", j, "err", err)
 				continue // not an authorized batch submitter, ignore
 			}
-
-			frameRef := celestia.FrameRef{}
-			frameRef.UnmarshalBinary(tx.Data())
-			if err != nil {
-				log.Warn("unable to decode frame reference", "index", j, "err", err)
-				return nil, err
-			}
-			log.Info("requesting data from celestia", "namespace", hex.EncodeToString(daClient.Namespace), "height", frameRef.BlockHeight)
-			blob, err := daClient.Client.Blob.Get(context.Background(), frameRef.BlockHeight, daClient.Namespace, frameRef.TxCommitment)
+			blob, err := daClient.Client.Get([][]byte{tx.Data()})
 			if err != nil {
 				return nil, NewResetError(fmt.Errorf("failed to resolve frame from celestia: %w", err))
 			}
-			out = append(out, blob.Data)
+			out = append(out, blob[0])
 		}
 	}
 	return out, nil

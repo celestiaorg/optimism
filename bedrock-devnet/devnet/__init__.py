@@ -252,17 +252,12 @@ def devnet_deploy(paths):
     wait_up(26658)
     wait_for_rpc_server('127.0.0.1:26658', method="p2p.Info")
 
-    result = run_command(["docker", "exec", "ops-bedrock-da-1", "celestia", "bridge", "auth", "admin", "--node.store", "/home/celestia/bridge"],
-        cwd=paths.ops_bedrock_dir, capture_output=True,
-    )
-    auth_token = result.stdout
     log.info('Bringing up `op-node`, `op-proposer` and `op-batcher`.')
     run_command(["docker", "compose", "up", "-d", "op-node", "op-proposer", "op-batcher"], cwd=paths.ops_bedrock_dir,
         env={
             "PWD": paths.ops_bedrock_dir,
             "L2OO_ADDRESS": l2_output_oracle,
             "SEQUENCER_BATCH_INBOX_ADDRESS": batch_inbox_address,
-            "CELESTIA_NODE_AUTH_TOKEN": auth_token,
         },
     )
 

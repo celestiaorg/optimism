@@ -72,10 +72,7 @@ func NewConfig(ctx *cli.Context, log log.Logger) (*node.Config, error) {
 	}
 	daCfg := rollup.NewDAConfig(
 		ctx.String(flags.DataAvailabilityRPC.Name),
-		ctx.String(flags.DataAvailabilityNamespaceId.Name),
-		ctx.String(flags.DataAvailabilityAuthToken.Name),
 	)
-	fmt.Println("data availability config: %s %s %s", daCfg.RPC, daCfg.NamespaceID, daCfg.AuthToken)
 
 	cfg := &node.Config{
 		L1:       l1Endpoint,

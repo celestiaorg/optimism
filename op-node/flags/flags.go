@@ -45,18 +45,6 @@ var (
 		Value:   "http://da:26658",
 		EnvVars: prefixEnvVars("DA_RPC"),
 	}
-	DataAvailabilityNamespaceId = &cli.StringFlag{
-		Name:    "da.namespace-id",
-		Usage:   "Data Availability Namespace ID",
-		Value:   "",
-		EnvVars: prefixEnvVars("DA_NAMESPACE_ID"),
-	}
-	DataAvailabilityAuthToken = &cli.StringFlag{
-		Name:    "da.auth-token",
-		Usage:   "Data Availability RPC Authentication Token",
-		Value:   "",
-		EnvVars: prefixEnvVars("DA_AUTH_TOKEN"),
-	}
 	Network = &cli.StringFlag{
 		Name:    "network",
 		Usage:   fmt.Sprintf("Predefined network selection. Available networks: %s", strings.Join(chaincfg.AvailableNetworks(), ", ")),
@@ -289,8 +277,6 @@ var requiredFlags = []cli.Flag{
 	L1NodeAddr,
 	L2EngineAddr,
 	DataAvailabilityRPC,
-	DataAvailabilityNamespaceId,
-	DataAvailabilityAuthToken,
 }
 
 var optionalFlags = []cli.Flag{

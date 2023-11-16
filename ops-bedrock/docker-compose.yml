@@ -21,9 +21,9 @@ services:
     image: us-docker.pkg.dev/oplabs-tools-artifacts/images/op-stack-go:devnet
     entrypoint: ["echo", "build complete"]
   da:
-    platform: linux/x86_64
-    image: "ghcr.io/rollkit/local-celestia-devnet:v0.12.1"
+    image: local-celestia-devnet:latest
     ports:
+      - "26650:26650"
       - "26657:26657"
       - "26658:26658"
       - "26659:26659"
@@ -103,9 +103,7 @@ services:
       --metrics.port=7300
       --pprof.enabled
       --rpc.enable-admin
-      --da.rpc=http://da:26658
-      --da.namespace-id=000008e5f679bf7116cb
-      --da.auth-token=$CELESTIA_NODE_AUTH_TOKEN
+      --da.rpc=da:26650
     ports:
       - "7545:8545"
       - "9003:9003"
