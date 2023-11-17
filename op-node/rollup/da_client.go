@@ -10,9 +10,9 @@ type DAClient struct {
 	Client *proxy.Client
 }
 
-func NewDAClient(cfg *DAConfig) (*DAClient, error) {
+func NewDAClient(rpc string) (*DAClient, error) {
 	client := proxy.NewClient()
-	err := client.Start(cfg.RPC, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	err := client.Start(rpc, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}

@@ -59,9 +59,7 @@ type L2API interface {
 
 func NewL2Verifier(t Testing, log log.Logger, l1 derive.L1Fetcher, eng L2API, cfg *rollup.Config, syncCfg *sync.Config) *L2Verifier {
 	metrics := &testutils.TestDerivationMetrics{}
-	daCfg, err := rollup.NewDAConfig("http://localhost:26658", "0000e8e5f679bf7116cb", "")
-	require.NoError(t, err)
-	pipeline := derive.NewDerivationPipeline(log, cfg, daCfg, l1, eng, metrics, syncCfg)
+	pipeline := derive.NewDerivationPipeline(log, cfg, l1, eng, metrics, syncCfg)
 	pipeline.Reset()
 
 	rollupNode := &L2Verifier{
@@ -83,7 +81,7 @@ func NewL2Verifier(t Testing, log log.Logger, l1 derive.L1Fetcher, eng L2API, cf
 	apis := []rpc.API{
 		{
 			Namespace:     "optimism",
-			Service:       node.NewNodeAPI(cfg, daCfg, eng, backend, log, m),
+			Service:       node.NewNodeAPI(cfg, eng, backend, log, m),
 			Public:        true,
 			Authenticated: false,
 		},

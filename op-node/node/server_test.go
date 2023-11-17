@@ -80,7 +80,6 @@ func TestOutputAtBlock(t *testing.T) {
 	rollupCfg := &rollup.Config{
 		// ignore other rollup config info in this test
 	}
-	daCfg := &rollup.DAConfig{}
 
 	l2Client := &testutils.MockL2Client{}
 	ref := eth.L2BlockRef{
@@ -136,7 +135,6 @@ func TestVersion(t *testing.T) {
 	rollupCfg := &rollup.Config{
 		// ignore other rollup config info in this test
 	}
-	daCfg := &rollup.DAConfig{}
 	server, err := newRPCServer(context.Background(), rpcCfg, rollupCfg, daCfg, l2Client, drClient, log, "0.0", metrics.NoopMetrics)
 	assert.NoError(t, err)
 	assert.NoError(t, server.Start())
@@ -184,8 +182,7 @@ func TestSyncStatus(t *testing.T) {
 	rollupCfg := &rollup.Config{
 		// ignore other rollup config info in this test
 	}
-	daCfg := &rollup.DAConfig{}
-	server, err := newRPCServer(context.Background(), rpcCfg, rollupCfg, daCfg, l2Client, drClient, log, "0.0", metrics.NoopMetrics)
+	server, err := newRPCServer(context.Background(), rpcCfg, rollupCfg, l2Client, drClient, log, "0.0", metrics.NoopMetrics)
 	assert.NoError(t, err)
 	assert.NoError(t, server.Start())
 	defer func() {

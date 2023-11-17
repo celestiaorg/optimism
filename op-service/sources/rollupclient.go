@@ -38,12 +38,6 @@ func (r *RollupClient) RollupConfig(ctx context.Context) (*rollup.Config, error)
 	return output, err
 }
 
-func (r *RollupClient) DataAvailabilityConfig(ctx context.Context) (*rollup.DAConfig, error) {
-	var output *rollup.DAConfig
-	err := r.rpc.CallContext(ctx, &output, "optimism_dataAvailabilityConfig")
-	return output, err
-}
-
 func (r *RollupClient) Version(ctx context.Context) (string, error) {
 	var output string
 	err := r.rpc.CallContext(ctx, &output, "optimism_version")

@@ -41,7 +41,6 @@ type DriverSetup struct {
 	Log           log.Logger
 	Metr          metrics.Metricer
 	RollupConfig  *rollup.Config
-	DAConfig      *rollup.DAConfig
 	Config        BatcherConfig
 	Txmgr         txmgr.TxManager
 	L1Client      L1Client
@@ -101,7 +100,7 @@ func (l *BatchSubmitter) StartBatchSubmitting() error {
 	l.wg.Add(1)
 	go l.loop()
 
-	daClient, err := rollup.NewDAClient(l.DAConfig)
+	daClient, err := rollup.NewDAClient(l.RollupConfig.DataAvailabilityRPC)
 	if err != nil {
 		return err
 	}

@@ -36,17 +36,6 @@ var (
 	ErrL2ChainIDNotPositive          = errors.New("L2 chain ID must be non-zero and positive")
 )
 
-type DAConfig struct {
-	// RPC is the rpc address of the Data Availability server
-	RPC string `json:"rpc"`
-}
-
-func NewDAConfig(rpc string) *DAConfig {
-	return &DAConfig{
-		RPC: rpc,
-	}
-}
-
 type Genesis struct {
 	// The L1 block that the rollup starts *after* (no derived transactions)
 	L1 eth.BlockID `json:"l1"`
@@ -104,6 +93,9 @@ type Config struct {
 
 	// L1 address that declares the protocol versions, optional (Beta feature)
 	ProtocolVersionsAddress common.Address `json:"protocol_versions_address,omitempty"`
+
+	// DataAvailabilityRPC is the rpc address of the Data Availability server
+	DataAvailabilityRPC string `json:"data_availability_rpc"`
 }
 
 // ValidateL1Config checks L1 config variables for errors.
