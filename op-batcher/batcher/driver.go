@@ -2,6 +2,7 @@ package batcher
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -355,7 +356,12 @@ func (l *BatchSubmitter) sendTransaction(txdata txData, queue *txmgr.Queue[txDat
 		l.Log.Warn("unable to publish tx to celestia", "err", err)
 		return
 	}
+	if len(ids) != 1 {
+		l.Log.Warn("unexpected length for ids", "expected", 1, "got", len(ids))
+		return
+	}
 	data = ids[0]
+	l.Log.Info("blob successfully submitted to celestia", "id", hex.EncodeToString(data))
 
 	intrinsicGas, err := core.IntrinsicGas(data, nil, false, true, true, false)
 	if err != nil {

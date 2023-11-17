@@ -142,11 +142,15 @@ func DataFromEVMTransactions(config *rollup.Config, daClient *rollup.DAClient, b
 				log.Warn("tx in inbox with unauthorized submitter", "index", j, "err", err)
 				continue // not an authorized batch submitter, ignore
 			}
-			blob, err := daClient.Client.Get([][]byte{tx.Data()})
+			log.Info("requesting celestia blob", "id", tx.Data())
+			blobs, err := daClient.Client.Get([][]byte{tx.Data()})
 			if err != nil {
 				return nil, NewResetError(fmt.Errorf("failed to resolve frame from celestia: %w", err))
 			}
-			out = append(out, blob[0])
+			if len(blobs) != 1 {
+				log.Warn("unexpected length for blobs", "expected", 1, "got", len(blobs))
+			}
+			out = append(out, blobs[0])
 		}
 	}
 	return out, nil
