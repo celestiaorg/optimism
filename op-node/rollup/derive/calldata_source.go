@@ -2,6 +2,7 @@ package derive
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -142,13 +143,13 @@ func DataFromEVMTransactions(config *rollup.Config, daClient *rollup.DAClient, b
 				log.Warn("tx in inbox with unauthorized submitter", "index", j, "err", err)
 				continue // not an authorized batch submitter, ignore
 			}
-			log.Info("requesting celestia blob", "id", tx.Data())
+			log.Info("celestia: blob request", "id", hex.EncodeToString(tx.Data()))
 			blobs, err := daClient.Client.Get([][]byte{tx.Data()})
 			if err != nil {
-				return nil, NewResetError(fmt.Errorf("failed to resolve frame from celestia: %w", err))
+				return nil, NewResetError(fmt.Errorf("celestia: failed to resolve frame: %w", err))
 			}
 			if len(blobs) != 1 {
-				log.Warn("unexpected length for blobs", "expected", 1, "got", len(blobs))
+				log.Warn("celestia: unexpected length for blobs", "expected", 1, "got", len(blobs))
 			}
 			out = append(out, blobs[0])
 		}
