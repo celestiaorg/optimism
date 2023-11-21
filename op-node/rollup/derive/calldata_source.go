@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -62,7 +63,11 @@ type DataSource struct {
 // NewDataSource creates a new calldata source. It suppresses errors in fetching the L1 block if they occur.
 // If there is an error, it will attempt to fetch the result on the next call to `Next`.
 func NewDataSource(ctx context.Context, log log.Logger, cfg *rollup.Config, fetcher L1TransactionFetcher, block eth.BlockID, batcherAddr common.Address) (DataIter, error) {
-	daClient, err := rollup.NewDAClient(cfg.DataAvailabilityRPC)
+	daRpc := os.Getenv("OP_NODE_DA_RPC")
+	if daRpc == "" {
+		daRpc = "da:26650"
+	}
+	daClient, err := rollup.NewDAClient(daRpc)
 	if err != nil {
 		return nil, err
 	}

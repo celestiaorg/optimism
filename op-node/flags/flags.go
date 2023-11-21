@@ -39,12 +39,6 @@ var (
 		Usage:   "Rollup chain parameters",
 		EnvVars: prefixEnvVars("ROLLUP_CONFIG"),
 	}
-	DataAvailabilityRPC = &cli.StringFlag{
-		Name:    "da.rpc",
-		Usage:   "Data Availability RPC",
-		Value:   "http://da:26658",
-		EnvVars: prefixEnvVars("DA_RPC"),
-	}
 	Network = &cli.StringFlag{
 		Name:    "network",
 		Usage:   fmt.Sprintf("Predefined network selection. Available networks: %s", strings.Join(chaincfg.AvailableNetworks(), ", ")),
@@ -276,7 +270,6 @@ var (
 var requiredFlags = []cli.Flag{
 	L1NodeAddr,
 	L2EngineAddr,
-	DataAvailabilityRPC,
 }
 
 var optionalFlags = []cli.Flag{

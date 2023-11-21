@@ -93,9 +93,6 @@ type Config struct {
 
 	// L1 address that declares the protocol versions, optional (Beta feature)
 	ProtocolVersionsAddress common.Address `json:"protocol_versions_address,omitempty"`
-
-	// DataAvailabilityRPC is the rpc address of the Data Availability server
-	DataAvailabilityRPC string `json:"data_availability_rpc"`
 }
 
 // ValidateL1Config checks L1 config variables for errors.

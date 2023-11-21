@@ -24,7 +24,6 @@ services:
     image: local-celestia-devnet:latest
     ports:
       - "26650:26650"
-      - "26657:26657"
       - "26658:26658"
       - "26659:26659"
     healthcheck:
@@ -103,7 +102,8 @@ services:
       --metrics.port=7300
       --pprof.enabled
       --rpc.enable-admin
-      --da.rpc=da:26650
+    environment:
+      OP_NODE_DA_RPC: "da:26650"
     ports:
       - "7545:8545"
       - "9003:9003"
@@ -182,6 +182,7 @@ services:
       OP_BATCHER_METRICS_ENABLED: "true"
       OP_BATCHER_RPC_ENABLE_ADMIN: "true"
       OP_BATCHER_BATCH_TYPE: 0
+      OP_BATCHER_DA_RPC: "da:26650"
 
   artifact-server:
     depends_on:

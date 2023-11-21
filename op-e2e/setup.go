@@ -148,7 +148,6 @@ func DefaultSystemConfig(t *testing.T) SystemConfig {
 		P2PTopology:                nil, // no P2P connectivity by default
 		NonFinalizedProposals:      false,
 		ExternalL2Shim:             config.ExternalL2Shim,
-		DataAvailabilityRPC:        "127.0.0.1:26650",
 		BatcherTargetL1TxSizeBytes: 100_000,
 	}
 }
@@ -185,9 +184,6 @@ type SystemConfig struct {
 	BatcherLogger  log.Logger
 
 	ExternalL2Shim string
-
-	// DataAvailabilityRPC is the rpc address of the Data Availability server
-	DataAvailabilityRPC string
 
 	// map of outbound connections to other nodes. Node names prefixed with "~" are unconnected but linked.
 	// A nil map disables P2P completely.
@@ -434,7 +430,6 @@ func (cfg SystemConfig) Start(t *testing.T, _opts ...SystemConfigOption) (*Syste
 			CanyonTime:              cfg.DeployConfig.CanyonTime(uint64(cfg.DeployConfig.L1GenesisBlockTimestamp)),
 			SpanBatchTime:           cfg.DeployConfig.SpanBatchTime(uint64(cfg.DeployConfig.L1GenesisBlockTimestamp)),
 			ProtocolVersionsAddress: cfg.L1Deployments.ProtocolVersionsProxy,
-			DataAvailabilityRPC:     cfg.DataAvailabilityRPC,
 		}
 	}
 	defaultConfig := makeRollupConfig()
