@@ -21,7 +21,7 @@ services:
     image: us-docker.pkg.dev/oplabs-tools-artifacts/images/op-stack-go:devnet
     entrypoint: ["echo", "build complete"]
   da:
-    image: local-celestia-devnet:latest
+    image: opcelestia/local-celestia-devnet:v0.12.0
     ports:
       - "26650:26650"
       - "26658:26658"
