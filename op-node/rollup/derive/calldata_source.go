@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -16,20 +15,6 @@ import (
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
 	"github.com/ethereum-optimism/optimism/op-service/eth"
 )
-
-var daClient *rollup.DAClient
-
-func init() {
-	daRpc := os.Getenv("OP_NODE_DA_RPC")
-	if daRpc == "" {
-		daRpc = "da:26650"
-	}
-	var err error
-	daClient, err = rollup.NewDAClient(daRpc)
-	if err != nil {
-		log.Error("celestia: unable to create DA client", "err", err)
-	}
-}
 
 type DataIter interface {
 	Next(ctx context.Context) (eth.Data, error)
