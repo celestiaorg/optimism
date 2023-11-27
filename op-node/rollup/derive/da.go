@@ -12,7 +12,7 @@ var daClient *rollup.DAClient
 func init() {
 	daRpc := os.Getenv("OP_NODE_DA_RPC")
 	if daRpc == "" {
-		daRpc = "da:26650"
+		daRpc = "localhost:26650"
 	}
 	var err error
 	daClient, err = rollup.NewDAClient(daRpc)

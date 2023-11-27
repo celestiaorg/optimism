@@ -103,7 +103,7 @@ func (l *BatchSubmitter) StartBatchSubmitting() error {
 
 	daRpc := os.Getenv("OP_BATCHER_DA_RPC")
 	if daRpc == "" {
-		daRpc = "da:26650"
+		daRpc = "localhost:26650"
 	}
 	daClient, err := rollup.NewDAClient(daRpc)
 	if err != nil {
