@@ -249,8 +249,7 @@ def devnet_deploy(paths):
     run_command(['docker', 'compose', 'up', '-d', 'da'], cwd=paths.ops_bedrock_dir, env={
         'PWD': paths.ops_bedrock_dir,
     })
-    wait_up(26658)
-    wait_for_rpc_server('127.0.0.1:26658', method="p2p.Info")
+    wait_up(26650)
 
     log.info('Bringing up `op-node`, `op-proposer` and `op-batcher`.')
     run_command(["docker", "compose", "up", "-d", "op-node", "op-proposer", "op-batcher"], cwd=paths.ops_bedrock_dir,
@@ -294,11 +293,11 @@ def debug_dumpBlock(url):
     return data
 
 
-def wait_for_rpc_server(url, method="eth_chainId"):
+def wait_for_rpc_server(url):
     log.info(f'Waiting for RPC server at {url}')
 
     headers = {'Content-type': 'application/json'}
-    body = f'{{"id":1, "jsonrpc":"2.0", "method": "{method}", "params":[]}}'
+    body = '{"id":1, "jsonrpc":"2.0", "method": "eth_chainId", "params":[]}'
 
     while True:
         try:

@@ -24,8 +24,6 @@ services:
     image: ghcr.io/rollkit/local-celestia-devnet:v0.12.2
     ports:
       - "26650:26650"
-      - "26658:26658"
-      - "26659:26659"
     environment:
       CELESTIA_NAMESPACE: 000008e5f679bf7116cb
     healthcheck:
