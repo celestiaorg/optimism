@@ -355,7 +355,7 @@ func (l *BatchSubmitter) sendTransaction(txdata txData, queue *txmgr.Queue[txDat
 	// Do the gas estimation offline. A value of 0 will cause the [txmgr] to estimate the gas limit.
 	data := txdata.Bytes()
 
-	ids, _, err := l.daClient.Client.Submit([][]byte{data})
+	ids, _, err := l.daClient.Client.Submit([][]byte{data}, -1)
 	if err == nil && len(ids) == 1 {
 		l.Log.Info("celestia: blob successfully submitted", "id", hex.EncodeToString(ids[0]))
 		data = append([]byte{derive.DerivationVersionCelestia}, ids[0]...)
