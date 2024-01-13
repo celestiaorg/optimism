@@ -110,6 +110,9 @@ func (n *OpNode) init(ctx context.Context, cfg *Config, snapshotLog log.Logger) 
 	if err := n.initL1(ctx, cfg); err != nil {
 		return fmt.Errorf("failed to init L1: %w", err)
 	}
+	if err := n.initDA(ctx, cfg); err != nil {
+		return fmt.Errorf("failed to init da: %w", err)
+	}
 	if err := n.initL2(ctx, cfg, snapshotLog); err != nil {
 		return fmt.Errorf("failed to init L2: %w", err)
 	}
@@ -285,6 +288,10 @@ func (n *OpNode) initRuntimeConfig(ctx context.Context, cfg *Config) error {
 		close(n.runtimeConfigReloaderDone)
 	}(n.resourcesCtx, cfg.RuntimeConfigReloadInterval) // this keeps running after initialization
 	return nil
+}
+
+func (n *OpNode) initDA(ctx context.Context, cfg *Config) error {
+	return driver.SetDAClient(cfg.DaConfig)
 }
 
 func (n *OpNode) initL2(ctx context.Context, cfg *Config, snapshotLog log.Logger) error {

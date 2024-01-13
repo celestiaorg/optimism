@@ -1,4 +1,4 @@
-package rollup
+package celestia
 
 import (
 	"github.com/rollkit/go-da/proxy"
