@@ -2,7 +2,7 @@ package celestia
 
 import (
 	"fmt"
-	"net/url"
+	"net"
 
 	"github.com/urfave/cli/v2"
 
@@ -16,6 +16,24 @@ const (
 var (
 	defaultDaRpc = "localhost:26650"
 )
+
+func Check(address string) bool {
+	_, port, err := net.SplitHostPort(address)
+	if err != nil {
+		return false
+	}
+
+	if port == "" {
+		return false
+	}
+
+	_, err = net.LookupPort("tcp", port)
+	if err != nil {
+		return false
+	}
+
+	return true
+}
 
 func CLIFlags(envPrefix string) []cli.Flag {
 	return []cli.Flag{
@@ -37,8 +55,8 @@ func (c Config) Check() error {
 		c.DaRpc = defaultDaRpc
 	}
 
-	if _, err := url.Parse(c.DaRpc); err != nil {
-		return fmt.Errorf("invalid da rpc: %w", err)
+	if !Check(c.DaRpc) {
+		return fmt.Errorf("invalid da rpc")
 	}
 
 	return nil
@@ -53,8 +71,8 @@ func (c CLIConfig) Check() error {
 		c.DaRpc = defaultDaRpc
 	}
 
-	if _, err := url.Parse(c.DaRpc); err != nil {
-		return fmt.Errorf("invalid da rpc: %w", err)
+	if !Check(c.DaRpc) {
+		return fmt.Errorf("invalid da rpc")
 	}
 
 	return nil
