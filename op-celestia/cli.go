@@ -1,6 +1,7 @@
 package celestia
 
 import (
+	"errors"
 	"fmt"
 	"net"
 
@@ -15,24 +16,26 @@ const (
 
 var (
 	defaultDaRpc = "localhost:26650"
+
+	ErrInvalidPort = errors.New("invalid port")
 )
 
-func Check(address string) bool {
+func Check(address string) error {
 	_, port, err := net.SplitHostPort(address)
 	if err != nil {
-		return false
+		return err
 	}
 
 	if port == "" {
-		return false
+		return ErrInvalidPort
 	}
 
 	_, err = net.LookupPort("tcp", port)
 	if err != nil {
-		return false
+		return err
 	}
 
-	return true
+	return nil
 }
 
 func CLIFlags(envPrefix string) []cli.Flag {
@@ -55,8 +58,8 @@ func (c Config) Check() error {
 		c.DaRpc = defaultDaRpc
 	}
 
-	if !Check(c.DaRpc) {
-		return fmt.Errorf("invalid da rpc")
+	if err := Check(c.DaRpc); err != nil {
+		return fmt.Errorf("invalid da rpc: %w", err)
 	}
 
 	return nil
@@ -71,8 +74,8 @@ func (c CLIConfig) Check() error {
 		c.DaRpc = defaultDaRpc
 	}
 
-	if !Check(c.DaRpc) {
-		return fmt.Errorf("invalid da rpc")
+	if err := Check(c.DaRpc); err != nil {
+		return fmt.Errorf("invalid da rpc: %w", err)
 	}
 
 	return nil
