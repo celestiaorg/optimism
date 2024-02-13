@@ -291,7 +291,7 @@ func (n *OpNode) initRuntimeConfig(ctx context.Context, cfg *Config) error {
 }
 
 func (n *OpNode) initDA(ctx context.Context, cfg *Config) error {
-	return driver.SetDAClient(cfg.DaConfig)
+	return driver.SetDAClient(cfg.DaConfig, &n.metrics.RPCMetrics)
 }
 
 func (n *OpNode) initL2(ctx context.Context, cfg *Config, snapshotLog log.Logger) error {

@@ -345,7 +345,9 @@ func (l *BatchSubmitter) sendTransaction(txdata txData, queue *txmgr.Queue[txDat
 	data := txdata.Bytes()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Duration(l.RollupConfig.BlockTime)*time.Second)
+	record := l.DAClient.Metrics.RecordRPCClientRequest("da_blob_submit")
 	ids, _, err := l.DAClient.Client.Submit(ctx, [][]byte{data}, -1)
+	record(err)
 	cancel()
 	if err == nil && len(ids) == 1 {
 		l.Log.Info("celestia: blob successfully submitted", "id", hex.EncodeToString(ids[0]))

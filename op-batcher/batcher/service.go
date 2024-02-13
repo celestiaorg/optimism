@@ -264,7 +264,7 @@ func (bs *BatcherService) initRPCServer(cfg *CLIConfig) error {
 }
 
 func (bs *BatcherService) initDA(cfg *CLIConfig) error {
-	client, err := celestia.NewDAClient(cfg.DaConfig.DaRpc)
+	client, err := celestia.NewDAClient(cfg.DaConfig.DaRpc, bs.Metrics)
 	if err != nil {
 		return err
 	}
