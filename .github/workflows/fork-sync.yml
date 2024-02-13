@@ -2,8 +2,8 @@ name: Sync Fork
 
 on:
   schedule:
-    - cron: '*/30 * * * *' # every 30 minutes
-  workflow_dispatch: # on button click
+    - cron: "0 * * * 0"  # run once a day
+  workflow_dispatch:   # run manually
 
 jobs:
   sync:
@@ -11,8 +11,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: tgymnich/fork-sync@v1.8
+      - uses: actions/checkout@master
         with:
-          base: celestia-develop
-          head: develop
-          token: ${{ secrets.REPO_PAT }}
+          fetch-depth: 500  # greater than the number of commits you made
+      - uses: tuxcanfly/rebase-upstream-action@master
+        with:  # all args are optional
+          upstream: ethereum-optimism/optimism
+          branch: develop
