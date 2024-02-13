@@ -18,7 +18,7 @@ lint-go:
 
 build-ts: submodules
 	if [ -n "$$NVM_DIR" ]; then \
-		. $$NVM_DIR/nvm.sh && nvm use; \
+		. $$NVM_DIR/nvm.sh && nvm install && nvm use; \
 	fi
 	pnpm install
 	pnpm build
