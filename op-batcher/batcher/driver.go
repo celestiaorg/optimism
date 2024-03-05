@@ -15,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 
 	"github.com/ethereum-optimism/optimism/op-batcher/metrics"
+	celestia "github.com/ethereum-optimism/optimism/op-celestia"
 	"github.com/ethereum-optimism/optimism/op-node/rollup"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	plasma "github.com/ethereum-optimism/optimism/op-plasma"
@@ -47,7 +48,8 @@ type DriverSetup struct {
 	L1Client         L1Client
 	EndpointProvider dial.L2EndpointProvider
 	ChannelConfig    ChannelConfig
-	PlasmaDA         *plasma.DAClient
+	PlasmaDA         plasma.DAStorage
+	DAClient         *celestia.DAClient
 }
 
 // BatchSubmitter encapsulates a service responsible for submitting L2 tx

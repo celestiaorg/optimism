@@ -30,6 +30,7 @@ func TestPlasmaDataSource(t *testing.T) {
 	rng := rand.New(rand.NewSource(1234))
 
 	l1F := &testutils.MockL1Source{}
+	blobF := &testutils.MockBlobsFetcher{}
 
 	storage := plasma.NewMockDAClient(logger)
 
@@ -61,13 +62,14 @@ func TestPlasmaDataSource(t *testing.T) {
 		SeqWindowSize:      20,
 		BatchInboxAddress:  batcherInbox,
 		DAChallengeAddress: common.Address{43},
+		EcotoneTime:        &refA0.Time,
 	}
 	// keep track of random input data to validate against
 	var inputs [][]byte
 
 	signer := cfg.L1Signer()
 
-	factory := NewDataSourceFactory(logger, cfg, l1F, nil, da)
+	factory := NewDataSourceFactory(logger, cfg, l1F, blobF, da)
 
 	for i := uint64(0); i <= 18; i++ {
 		parent := l1Refs[len(l1Refs)-1]

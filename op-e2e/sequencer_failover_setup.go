@@ -25,6 +25,7 @@ import (
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/driver"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/sync"
+	plasma "github.com/ethereum-optimism/optimism/op-plasma"
 	oplog "github.com/ethereum-optimism/optimism/op-service/log"
 	oprpc "github.com/ethereum-optimism/optimism/op-service/rpc"
 	"github.com/ethereum-optimism/optimism/op-service/sources"
@@ -243,6 +244,7 @@ func setupBatcher(t *testing.T, sys *System, conductors map[string]*conductor) {
 		BatchType:                    derive.SpanBatchType,
 		DataAvailabilityType:         batcherFlags.CalldataType,
 		ActiveSequencerCheckDuration: 0,
+		PlasmaDA:                     plasma.CLIConfig{Enabled: true, DAServerURL: "localhost:26650", DABackend: "celestia"},
 	}
 
 	batcher, err := bss.BatcherServiceFromCLIConfig(context.Background(), "0.0.1", batcherCLIConfig, sys.Cfg.Loggers["batcher"])
@@ -298,6 +300,7 @@ func sequencerCfg(rpcPort int) *rollupNode.Config {
 		ConductorEnabled:            true,
 		ConductorRpc:                fmt.Sprintf("http://%s:%d", localhost, rpcPort),
 		ConductorRpcTimeout:         1 * time.Second,
+		Plasma:                      plasma.CLIConfig{Enabled: true, DAServerURL: "localhost:26650", DABackend: "celestia"},
 	}
 }
 

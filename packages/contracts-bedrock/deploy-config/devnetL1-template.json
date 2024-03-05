@@ -44,7 +44,6 @@
   "eip1559Elasticity": 6,
   "l1GenesisBlockTimestamp": "0x64c811bf",
   "l2GenesisRegolithTimeOffset": "0x0",
-  "l2GenesisDeltaTimeOffset": null,
   "l2GenesisCanyonTimeOffset": "0x0",
   "systemConfigStartBlock": 0,
   "requiredProtocolVersion": "0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -61,5 +60,6 @@
   "proofMaturityDelaySeconds": 12,
   "disputeGameFinalityDelaySeconds": 6,
   "respectedGameType": 0,
-  "useFaultProofs": false
+  "useFaultProofs": false,
+  "daChallengeAddress": "0xff00000000000000000000000000000000000905"
 }
