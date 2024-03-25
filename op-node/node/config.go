@@ -77,7 +77,7 @@ type Config struct {
 	// AltDA config
 	AltDA altda.CLIConfig
 
-	DaConfig celestia.Config
+	DaConfig celestia.CLIConfig
 }
 
 type RPCConfig struct {
