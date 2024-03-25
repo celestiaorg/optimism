@@ -77,7 +77,7 @@ type Config struct {
 
 	// AltDA config
 	AltDA    altda.CLIConfig
-	DaConfig celestia.Config
+	DaConfig celestia.CLIConfig
 
 	IgnoreMissingPectraBlobSchedule bool
 	FetchWithdrawalRootFromState    bool

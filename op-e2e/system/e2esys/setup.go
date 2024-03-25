@@ -158,7 +158,7 @@ func DefaultSystemConfig(t testing.TB, opts ...SystemConfigOpt) SystemConfig {
 				RuntimeConfigReloadInterval: time.Minute * 10,
 				ConfigPersistence:           &rollupNode.DisabledConfigPersistence{},
 				Sync:                        sync.Config{SyncMode: sync.CLSync},
-				DaConfig:                    celestia.Config{DaRpc: "localhost:26650"},
+				DaConfig:                    celestia.CLIConfig{Rpc: "grpc://localhost:26650"},
 			},
 			RoleVerif: {
 				Driver: driver.Config{
@@ -175,7 +175,7 @@ func DefaultSystemConfig(t testing.TB, opts ...SystemConfigOpt) SystemConfig {
 				RuntimeConfigReloadInterval: time.Minute * 10,
 				ConfigPersistence:           &rollupNode.DisabledConfigPersistence{},
 				Sync:                        sync.Config{SyncMode: sync.CLSync},
-				DaConfig:                    celestia.Config{DaRpc: "localhost:26650"},
+				DaConfig:                    celestia.CLIConfig{Rpc: "grpc://localhost:26650"},
 			},
 		},
 		Loggers: map[string]log.Logger{
