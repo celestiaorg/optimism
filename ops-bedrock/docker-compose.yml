@@ -15,11 +15,9 @@ volumes:
 
 services:
   da:
-    image: ghcr.io/rollkit/local-celestia-devnet:v0.12.7
+    image: ghcr.io/rollkit/local-celestia-devnet:v0.13.1
     ports:
-      - "26650:26650"
-    environment:
-      CELESTIA_NAMESPACE: 000008e5f679bf7116cb
+      - "26658:26658"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:26659/header/1"]
       interval: 10s
@@ -95,7 +93,9 @@ services:
       --pprof.enabled
       --rpc.enable-admin
     environment:
-      OP_NODE_DA_RPC: "da:26650"
+      OP_NODE_DA_RPC: "http://da:26658"
+      OP_NODE_DA_AUTH_TOKEN: "${CELESTIA_NODE_AUTH_TOKEN}"
+      OP_NODE_DA_NAMESPACE: "00000000000000000000000000000000000000000008e5f679bf7116cb"
     ports:
       - "7545:8545"
       - "9003:9003"
@@ -144,8 +144,7 @@ services:
       - l1
       - l2
       - op-node
-      da:
-        condition: service_healthy
+      - da
     build:
       context: ../
       dockerfile: ops/docker/op-stack-go/Dockerfile
@@ -170,7 +169,9 @@ services:
       OP_BATCHER_METRICS_ENABLED: "true"
       OP_BATCHER_RPC_ENABLE_ADMIN: "true"
       OP_BATCHER_BATCH_TYPE: 0
-      OP_BATCHER_DA_RPC: "da:26650"
+      OP_BATCHER_DA_RPC: "http://da:26658"
+      OP_BATCHER_DA_AUTH_TOKEN: "${CELESTIA_NODE_AUTH_TOKEN}"
+      OP_BATCHER_DA_NAMESPACE: "00000000000000000000000000000000000000000008e5f679bf7116cb"
 
   op-challenger:
     depends_on:
