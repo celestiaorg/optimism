@@ -233,13 +233,20 @@ def devnet_deploy(paths):
     else:
         docker_env['L2OO_ADDRESS'] = l2_output_oracle
 
+    log.info('Bringing up DA')
+    run_command(['docker', 'compose', 'up', '-d', 'da'], cwd=paths.ops_bedrock_dir, env=docker_env)
+    wait_up(26658)
+    time.sleep(15)
+    celestia_node_auth_token = run_command([
+        'docker', 'compose', 'exec', '--no-TTY', 'da', 'celestia', 'bridge', 'auth', 'admin', '--node.store', '/home/celestia/bridge'
+        ], cwd=paths.ops_bedrock_dir, env=docker_env, capture_output=True).stdout.decode().strip()
+    docker_env['CELESTIA_NODE_AUTH_TOKEN'] = celestia_node_auth_token
+    print('CELESTIA_NODE_AUTH_TOKEN: ', celestia_node_auth_token)
+
+
     # Bring up the rest of the services.
     log.info('Bringing up `op-node`, `op-proposer` and `op-batcher`.')
     run_command(['docker', 'compose', 'up', '-d', 'op-node', 'op-proposer', 'op-batcher', 'artifact-server'], cwd=paths.ops_bedrock_dir, env=docker_env)
-
-    log.info('Bringing up DA')
-    run_command(['docker', 'compose', 'up', '-d', 'da'], cwd=paths.ops_bedrock_dir, env=docker_env)
-    wait_up(26650)
 
     # Optionally bring up op-challenger.
     if DEVNET_FPAC:

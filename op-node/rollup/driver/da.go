@@ -5,8 +5,8 @@ import (
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 )
 
-func SetDAClient(cfg celestia.Config) error {
-	client, err := celestia.NewDAClient(cfg.DaRpc)
+func SetDAClient(cfg celestia.CLIConfig) error {
+	client, err := celestia.NewDAClient(cfg.Rpc, cfg.AuthToken, cfg.Namespace)
 	if err != nil {
 		return err
 	}
