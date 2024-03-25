@@ -78,7 +78,7 @@ type Config struct {
 	// Plasma DA config
 	Plasma plasma.CLIConfig
 
-	DaConfig celestia.Config
+	DaConfig celestia.CLIConfig
 }
 
 type RPCConfig struct {
