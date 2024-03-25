@@ -1,94 +1,67 @@
 package celestia
 
 import (
-	"errors"
-	"fmt"
-	"net"
-
 	"github.com/urfave/cli/v2"
 
 	opservice "github.com/ethereum-optimism/optimism/op-service"
 )
 
 const (
-	DaRpcFlagName = "da.rpc"
+	// RPCFlagName defines the flag for the rpc url
+	RPCFlagName       = "da.rpc"
+	// AuthTokenFlagName defines the flag for the auth token
+	AuthTokenFlagName = "da.auth_token"
+	// NamespaceFlagName defines the flag for the namespace
+	NamespaceFlagName = "da.namespace"
+
+	// NamespaceSize is the size of the hex encoded namespace string
+	NamespaceSize = 58
+
+	// defaultRPC is the default rpc dial address
+	defaultRPC = "grpc://localhost:26650"
 )
-
-var (
-	defaultDaRpc = "localhost:26650"
-
-	ErrInvalidPort = errors.New("invalid port")
-)
-
-func Check(address string) error {
-	_, port, err := net.SplitHostPort(address)
-	if err != nil {
-		return err
-	}
-
-	if port == "" {
-		return ErrInvalidPort
-	}
-
-	_, err = net.LookupPort("tcp", port)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
 
 func CLIFlags(envPrefix string) []cli.Flag {
 	return []cli.Flag{
 		&cli.StringFlag{
-			Name:    DaRpcFlagName,
-			Usage:   "dial address of data availability grpc client",
-			Value:   defaultDaRpc,
+			Name:    RPCFlagName,
+			Usage:   "dial address of the data availability rpc client; supports grpc, http, https",
+			Value:   defaultRPC,
 			EnvVars: opservice.PrefixEnvVar(envPrefix, "DA_RPC"),
+		},
+		&cli.StringFlag{
+			Name:    AuthTokenFlagName,
+			Usage:   "authentication token of the data availability client",
+			EnvVars: opservice.PrefixEnvVar(envPrefix, "DA_AUTH_TOKEN"),
+		},
+		&cli.StringFlag{
+			Name:    NamespaceFlagName,
+			Usage:   "namespace of the data availability client",
+			EnvVars: opservice.PrefixEnvVar(envPrefix, "DA_NAMESPACE"),
 		},
 	}
 }
 
-type Config struct {
-	DaRpc string
-}
-
-func (c Config) Check() error {
-	if c.DaRpc == "" {
-		c.DaRpc = defaultDaRpc
-	}
-
-	if err := Check(c.DaRpc); err != nil {
-		return fmt.Errorf("invalid da rpc: %w", err)
-	}
-
-	return nil
-}
-
 type CLIConfig struct {
-	DaRpc string
+	Rpc       string
+	AuthToken string
+	Namespace string
 }
 
 func (c CLIConfig) Check() error {
-	if c.DaRpc == "" {
-		c.DaRpc = defaultDaRpc
-	}
-
-	if err := Check(c.DaRpc); err != nil {
-		return fmt.Errorf("invalid da rpc: %w", err)
-	}
-
 	return nil
 }
 
 func NewCLIConfig() CLIConfig {
 	return CLIConfig{
-		DaRpc: defaultDaRpc,
+		Rpc: defaultRPC,
 	}
 }
 
 func ReadCLIConfig(ctx *cli.Context) CLIConfig {
 	return CLIConfig{
-		DaRpc: ctx.String(DaRpcFlagName),
+		Rpc: ctx.String(RPCFlagName),
+		AuthToken: ctx.String(AuthTokenFlagName),
+		Namespace: ctx.String(NamespaceFlagName),
 	}
 }
