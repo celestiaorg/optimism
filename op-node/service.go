@@ -112,7 +112,7 @@ func NewConfig(ctx *cli.Context, log log.Logger) (*node.Config, error) {
 		ConductorRpcTimeout: ctx.Duration(flags.ConductorRpcTimeoutFlag.Name),
 
 		Plasma:   plasma.ReadCLIConfig(ctx),
-		DaConfig: celestia.Config(celestia.ReadCLIConfig(ctx)),
+		DaConfig: celestia.ReadCLIConfig(ctx),
 	}
 
 	if err := cfg.LoadPersisted(log); err != nil {
