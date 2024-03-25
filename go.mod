@@ -4,6 +4,8 @@ go 1.21.1
 
 require (
 	github.com/BurntSushi/toml v1.3.2
+	github.com/DataDog/zstd v1.5.2
+	github.com/andybalholm/brotli v1.0.4
 	github.com/btcsuite/btcd v0.24.0
 	github.com/btcsuite/btcd/chaincfg/chainhash v1.1.0
 	github.com/cockroachdb/pebble v1.1.0
@@ -57,7 +59,6 @@ require (
 )
 
 require (
-	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/VictoriaMetrics/fastcache v1.12.1 // indirect
 	github.com/allegro/bigcache v1.2.1 // indirect
