@@ -721,7 +721,10 @@ func (l *BatchSubmitter) sendTransaction(txdata txData, queue *txmgr.Queue[txRef
 		if nf := len(txdata.frames); nf != 1 {
 			l.Log.Crit("Unexpected number of frames in calldata tx", "num_frames", nf)
 		}
-		candidate = l.calldataTxCandidate(txdata.CallData())
+		candidate, err = l.celestiaTxCandidate(txdata.CallData())
+		if err != nil {
+			return err
+		}
 	}
 
 	l.sendTx(txdata, false, candidate, queue, receiptsCh)
@@ -760,6 +763,14 @@ func (l *BatchSubmitter) blobTxCandidate(data txData) (*txmgr.TxCandidate, error
 
 func (l *BatchSubmitter) calldataTxCandidate(data []byte) *txmgr.TxCandidate {
 	l.Log.Info("Building Calldata transaction candidate", "size", len(data))
+	return &txmgr.TxCandidate{
+		To:     &l.RollupConfig.BatchInboxAddress,
+		TxData: data,
+	}
+}
+
+func (l *BatchSubmitter) celestiaTxCandidate(data []byte) (*txmgr.TxCandidate, error) {
+	l.Log.Info("Building Calldata transaction candidate", "size", len(data))
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Duration(l.RollupConfig.BlockTime)*time.Second)
 	ids, err := l.DAClient.Client.Submit(ctx, [][]byte{data}, -1, l.DAClient.Namespace)
 	cancel()
@@ -767,12 +778,16 @@ func (l *BatchSubmitter) calldataTxCandidate(data []byte) *txmgr.TxCandidate {
 		l.Log.Info("celestia: blob successfully submitted", "id", hex.EncodeToString(ids[0]))
 		data = append([]byte{celestia.DerivationVersionCelestia}, ids[0]...)
 	} else {
+		if l.DAClient.EthFallbackDisabled {
+			return nil, fmt.Errorf("celestia: blob submission failed; eth fallback disabled: %w", err)
+		}
+
 		l.Log.Info("celestia: blob submission failed; falling back to eth", "err", err)
 	}
 	return &txmgr.TxCandidate{
 		To:     &l.RollupConfig.BatchInboxAddress,
 		TxData: data,
-	}
+	}, nil
 }
 
 func (l *BatchSubmitter) handleReceipt(r txmgr.TxReceipt[txRef]) {
