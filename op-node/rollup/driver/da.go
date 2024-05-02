@@ -6,7 +6,7 @@ import (
 )
 
 func SetDAClient(cfg celestia.CLIConfig) error {
-	client, err := celestia.NewDAClient(cfg.Rpc, cfg.AuthToken, cfg.Namespace)
+	client, err := celestia.NewDAClient(cfg.Rpc, cfg.AuthToken, cfg.Namespace, false)
 	if err != nil {
 		return err
 	}
