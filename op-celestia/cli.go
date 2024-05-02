@@ -8,11 +8,13 @@ import (
 
 const (
 	// RPCFlagName defines the flag for the rpc url
-	RPCFlagName       = "da.rpc"
+	RPCFlagName = "da.rpc"
 	// AuthTokenFlagName defines the flag for the auth token
 	AuthTokenFlagName = "da.auth_token"
 	// NamespaceFlagName defines the flag for the namespace
 	NamespaceFlagName = "da.namespace"
+	// EthFallbackDisabledFlagName defines the flag for disabling eth fallback
+	EthFallbackDisabledFlagName = "da.eth_fallback_disabled"
 
 	// NamespaceSize is the size of the hex encoded namespace string
 	NamespaceSize = 58
@@ -39,13 +41,19 @@ func CLIFlags(envPrefix string) []cli.Flag {
 			Usage:   "namespace of the data availability client",
 			EnvVars: opservice.PrefixEnvVar(envPrefix, "DA_NAMESPACE"),
 		},
+		&cli.BoolFlag{
+			Name:    EthFallbackDisabledFlagName,
+			Usage:   "disable eth fallback",
+			EnvVars: opservice.PrefixEnvVar(envPrefix, "ETH_FALLBACK_DISABLED"),
+		},
 	}
 }
 
 type CLIConfig struct {
-	Rpc       string
-	AuthToken string
-	Namespace string
+	Rpc                 string
+	AuthToken           string
+	Namespace           string
+	EthFallbackDisabled bool
 }
 
 func (c CLIConfig) Check() error {
@@ -60,8 +68,9 @@ func NewCLIConfig() CLIConfig {
 
 func ReadCLIConfig(ctx *cli.Context) CLIConfig {
 	return CLIConfig{
-		Rpc: ctx.String(RPCFlagName),
-		AuthToken: ctx.String(AuthTokenFlagName),
-		Namespace: ctx.String(NamespaceFlagName),
+		Rpc:                 ctx.String(RPCFlagName),
+		AuthToken:           ctx.String(AuthTokenFlagName),
+		Namespace:           ctx.String(NamespaceFlagName),
+		EthFallbackDisabled: ctx.Bool(EthFallbackDisabledFlagName),
 	}
 }
