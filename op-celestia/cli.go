@@ -44,7 +44,7 @@ func CLIFlags(envPrefix string) []cli.Flag {
 		&cli.BoolFlag{
 			Name:    EthFallbackDisabledFlagName,
 			Usage:   "disable eth fallback",
-			EnvVars: opservice.PrefixEnvVar(envPrefix, "ETH_FALLBACK_DISABLED"),
+			EnvVars: opservice.PrefixEnvVar(envPrefix, "DA_ETH_FALLBACK_DISABLED"),
 		},
 	}
 }
