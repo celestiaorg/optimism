@@ -494,7 +494,7 @@ func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, que
 		}
 	} else {
 		// sanity check
-		if nf := len(txdata.frames); nf != 1 {
+		if nf := len(txdata.frames); nf > l.ChannelConfig.TargetNumFrames {
 			l.Log.Crit("unexpected number of frames in calldata tx", "num_frames", nf)
 		}
 		data := txdata.CallData()

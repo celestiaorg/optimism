@@ -56,6 +56,12 @@ type CLIConfig struct {
 	// If using blobs, this setting is ignored and the max blob size is used.
 	MaxL1TxSize uint64
 
+	// MaxFrameSize is the maximum size of a frame in a batch tx.
+	MaxFrameSize uint64
+
+	// MultiFrameTxs controls whether to put all frames of a channel inside a single tx.
+	MultiFrameTxs bool
+
 	// The target number of frames to create per channel. Controls number of blobs
 	// per blob tx, if using Blob DA.
 	TargetNumFrames int
@@ -97,8 +103,8 @@ type CLIConfig struct {
 	MetricsConfig opmetrics.CLIConfig
 	PprofConfig   oppprof.CLIConfig
 	RPC           oprpc.CLIConfig
-	PlasmaDA         plasma.CLIConfig
-	DaConfig         celestia.CLIConfig
+	PlasmaDA      plasma.CLIConfig
+	DaConfig      celestia.CLIConfig
 }
 
 func (c *CLIConfig) Check() error {
@@ -170,6 +176,8 @@ func NewConfig(ctx *cli.Context) *CLIConfig {
 		MaxPendingTransactions:       ctx.Uint64(flags.MaxPendingTransactionsFlag.Name),
 		MaxChannelDuration:           ctx.Uint64(flags.MaxChannelDurationFlag.Name),
 		MaxL1TxSize:                  ctx.Uint64(flags.MaxL1TxSizeBytesFlag.Name),
+		MaxFrameSize:                 ctx.Uint64(flags.MaxFrameSizeFlag.Name),
+		MultiFrameTxs:                ctx.Bool(flags.MultiFrameTxsFlag.Name),
 		TargetNumFrames:              ctx.Int(flags.TargetNumFramesFlag.Name),
 		ApproxComprRatio:             ctx.Float64(flags.ApproxComprRatioFlag.Name),
 		Compressor:                   ctx.String(flags.CompressorFlag.Name),

@@ -75,6 +75,18 @@ var (
 		Value:   120_000, // will be overwritten to max for blob da-type
 		EnvVars: prefixEnvVars("MAX_L1_TX_SIZE_BYTES"),
 	}
+	MaxFrameSizeFlag = &cli.Uint64Flag{
+		Name:    "max-frame-size-bytes",
+		Usage:   "The maximum size of a frame. 0 to use default value (120k-1)",
+		Value:   0,
+		EnvVars: prefixEnvVars("MAX_FRAME_SIZE_BYTES"),
+	}
+	MultiFrameTxsFlag = &cli.BoolFlag{
+		Name:    "multi-frame-txs",
+		Usage:   "Whether to put all frames of a channel inside a single tx. Ignored for blobs, where true will be used.",
+		Value:   false,
+		EnvVars: prefixEnvVars("MULTI_FRAME_TXS"),
+	}
 	TargetNumFramesFlag = &cli.IntFlag{
 		Name:    "target-num-frames",
 		Usage:   "The target number of frames to create per channel. Controls number of blobs per blob tx, if using Blob DA.",
@@ -159,6 +171,8 @@ var optionalFlags = []cli.Flag{
 	MaxPendingTransactionsFlag,
 	MaxChannelDurationFlag,
 	MaxL1TxSizeBytesFlag,
+	MaxFrameSizeFlag,
+	MultiFrameTxsFlag,
 	TargetNumFramesFlag,
 	ApproxComprRatioFlag,
 	CompressorFlag,

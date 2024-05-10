@@ -206,6 +206,16 @@ func (bs *BatcherService) initChannelConfig(cfg *CLIConfig) error {
 		BatchType:          cfg.BatchType,
 	}
 
+	// override max frame size if set
+	if cfg.MaxFrameSize > 0 {
+		cc.MaxFrameSize = cfg.MaxFrameSize
+	}
+
+	// enable multi-frame txs if set
+	if cfg.MultiFrameTxs {
+		cc.MultiFrameTxs = true
+	}
+
 	switch cfg.DataAvailabilityType {
 	case flags.BlobsType:
 		if !cfg.TestUseMaxTxSizeForBlobs {
