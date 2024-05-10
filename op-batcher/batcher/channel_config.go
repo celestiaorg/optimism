@@ -33,6 +33,9 @@ type ChannelConfig struct {
 	// A value of 0 disables a maximum.
 	MaxBlocksPerSpanBatch int
 
+	// MultiFrameTxs controls whether to put all frames of a channel inside a single tx.
+	MultiFrameTxs bool
+
 	// Target number of frames to create per channel.
 	// For blob transactions, this controls the number of blobs to target adding
 	// to each blob tx.
