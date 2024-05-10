@@ -201,9 +201,20 @@ func (bs *BatcherService) initChannelConfig(cfg *CLIConfig) error {
 		ChannelTimeout:     channelTimeout,
 		MaxChannelDuration: cfg.MaxChannelDuration,
 		MaxFrameSize:       cfg.MaxL1TxSize - 1, // account for version byte prefix; reset for blobs
+		MultiFrameTxs:      cfg.MultiFrameTxs,
 		TargetNumFrames:    cfg.TargetNumFrames,
 		SubSafetyMargin:    cfg.SubSafetyMargin,
 		BatchType:          cfg.BatchType,
+	}
+
+	// override max frame size if set
+	if cfg.MaxFrameSize > 0 {
+		cc.MaxFrameSize = cfg.MaxFrameSize
+	}
+
+	// enable multi-frame txs if set
+	if cfg.MultiFrameTxs {
+		cc.MultiFrameTxs = true
 	}
 
 	switch cfg.DataAvailabilityType {
