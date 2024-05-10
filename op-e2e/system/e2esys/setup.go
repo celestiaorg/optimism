@@ -1006,7 +1006,7 @@ func (cfg SystemConfig) Start(t *testing.T, startOpts ...StartOption) (*System, 
 		DataAvailabilityType:  sys.Cfg.DataAvailabilityType,
 		CompressionAlgo:       derive.Zlib,
 		AltDA:                 batcherAltDACLIConfig,
-		DaConfig:              celestia.CLIConfig{DaRpc: "localhost:26650"},
+		DaConfig:              celestia.CLIConfig{Rpc: "localhost:26650"},
 	}
 
 	// Apply batcher cli modifications
