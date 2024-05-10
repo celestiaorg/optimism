@@ -547,7 +547,7 @@ func (l *BatchSubmitter) cancelBlockingTx(queue *txmgr.Queue[txRef], receiptsCh 
 	var candidate *txmgr.TxCandidate
 	var err error
 	if isBlockedBlob {
-		candidate = l.calldataTxCandidate([]byte{})
+		candidate, _ = l.calldataTxCandidate([]byte{})
 	} else if candidate, err = l.blobTxCandidate(emptyTxData); err != nil {
 		panic(err) // this error should not happen
 	}
@@ -573,7 +573,7 @@ func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, que
 		}
 	} else {
 		// sanity check
-		if nf := len(txdata.frames); nf != 1 {
+		if nf := len(txdata.frames); nf > l.ChannelConfig.ChannelConfig().TargetNumFrames {
 			l.Log.Crit("Unexpected number of frames in calldata tx", "num_frames", nf)
 		}
 		data := txdata.CallData()
