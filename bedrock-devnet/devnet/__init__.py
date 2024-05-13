@@ -287,9 +287,11 @@ def devnet_deploy(paths):
     run_command(['docker', 'compose', 'up', '-d', 'da'], cwd=paths.ops_bedrock_dir, env=docker_env)
     wait_up(26658)
     time.sleep(15)
-    celestia_node_auth_token = run_command([
-        'docker', 'compose', 'exec', '--no-TTY', 'da', 'celestia', 'bridge', 'auth', 'admin', '--node.store', '/home/celestia/bridge'
-        ], cwd=paths.ops_bedrock_dir, env=docker_env, capture_output=True).stdout.decode().strip()
+    celestia_node_auth_token = os.getenv("CELESTIA_NODE_AUTH_TOKEN")
+    if not celestia_node_auth_token:
+        celestia_node_auth_token = run_command([
+            'docker', 'compose', 'exec', '--no-TTY', 'da', 'celestia', 'bridge', 'auth', 'admin', '--node.store', '/home/celestia/bridge'
+            ], cwd=paths.ops_bedrock_dir, env=docker_env, capture_output=True).stdout.decode().strip()
     docker_env['CELESTIA_NODE_AUTH_TOKEN'] = celestia_node_auth_token
     print('CELESTIA_NODE_AUTH_TOKEN: ', celestia_node_auth_token)
 
