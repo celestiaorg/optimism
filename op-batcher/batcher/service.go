@@ -264,6 +264,7 @@ func (bs *BatcherService) initChannelConfig(cfg *CLIConfig) error {
 	bs.Log.Info("Initialized channel-config",
 		"da_type", cfg.DataAvailabilityType,
 		"use_alt_da", bs.UseAltDA,
+		"multi_frame_txs", cc.MultiFrameTxs,
 		"max_frame_size", cc.MaxFrameSize,
 		"target_num_frames", cc.TargetNumFrames,
 		"compressor", cc.CompressorConfig.Kind,
