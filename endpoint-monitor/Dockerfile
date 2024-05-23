@@ -1,4 +1,4 @@
-FROM golang:1.21.1-alpine3.18 as builder
+FROM golang:1.22.3-alpine3.18 as builder
 
 RUN apk --no-cache add make jq bash git alpine-sdk
 

@@ -15,6 +15,17 @@ volumes:
 
 services:
 
+  da:
+    image: ghcr.io/rollkit/local-celestia-devnet:v0.13.1
+    ports:
+      - "26658:26658"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:26659/header/1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   l1:
     build:
       context: .
@@ -52,6 +63,7 @@ services:
     depends_on:
       - l1
       - l2
+      - da-server
     build:
       context: ../
       dockerfile: ops/docker/op-stack-go/Dockerfile
@@ -195,6 +207,8 @@ services:
       OP_CHALLENGER_NUM_CONFIRMATIONS: 1
 
   da-server:
+    depends_on:
+      - da
     image: us-docker.pkg.dev/oplabs-tools-artifacts/images/da-server:devnet
     build:
       context: ../
@@ -202,11 +216,13 @@ services:
       target: da-server-target
     command: >
       da-server
-      --file.path=/data
       --addr=0.0.0.0
       --port=3100
       --log.level=debug
       --generic-commitment="${PLASMA_GENERIC_DA}"
+      --celestia.server="http://da:26658"
+      --celestia.auth-token="${CELESTIA_NODE_AUTH_TOKEN}"
+      --celestia.namespace="00000000000000000000000000000000000000000008e5f679bf7116cb"
     ports:
       - "3100:3100"
     volumes:

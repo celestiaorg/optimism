@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 
 	"github.com/urfave/cli/v2"
 
+	plasma "github.com/ethereum-optimism/optimism/op-plasma"
 	opservice "github.com/ethereum-optimism/optimism/op-service"
 	oplog "github.com/ethereum-optimism/optimism/op-service/log"
 )
@@ -19,6 +21,9 @@ const (
 	S3AccessKeySecretFlagName = "s3.access-key-secret"
 	FileStorePathFlagName     = "file.path"
 	GenericCommFlagName       = "generic-commitment"
+	CelestiaServerFlagName        = "celestia.server"
+	CelestiaAuthTokenFlagName     = "celestia.auth-token"
+	CelestiaNamespaceFlagName     = "celestia.namespace"
 )
 
 const EnvVarPrefix = "OP_PLASMA_DA_SERVER"
@@ -74,6 +79,23 @@ var (
 		Value:   "",
 		EnvVars: prefixEnvVars("S3_ACCESS_KEY_SECRET"),
 	}
+	CelestiaServerFlag = &cli.StringFlag{
+		Name:    CelestiaServerFlagName,
+		Usage:   "celestia server endpoint",
+		EnvVars: prefixEnvVars("CELESTIA_SERVER"),
+	}
+	CelestiaAuthTokenFlag = &cli.StringFlag{
+		Name:    CelestiaAuthTokenFlagName,
+		Usage:   "celestia auth token",
+		Value:   "",
+		EnvVars: prefixEnvVars("CELESTIA_AUTH_TOKEN"),
+	}
+	CelestiaNamespaceFlag = &cli.StringFlag{
+		Name:    CelestiaNamespaceFlagName,
+		Usage:   "celestia namespace",
+		Value:   "",
+		EnvVars: prefixEnvVars("CELESTIA_NAMESPACE"),
+	}
 )
 
 var requiredFlags = []cli.Flag{
@@ -88,6 +110,9 @@ var optionalFlags = []cli.Flag{
 	S3AccessKeyIDFlag,
 	S3AccessKeySecretFlag,
 	GenericCommFlag,
+	CelestiaServerFlag,
+	CelestiaAuthTokenFlag,
+	CelestiaNamespaceFlag,
 }
 
 func init() {
@@ -105,6 +130,9 @@ type CLIConfig struct {
 	S3AccessKeyID     string
 	S3AccessKeySecret string
 	UseGenericComm    bool
+	CelestiaEndpoint      string
+	CelestiaAuthToken     string
+	CelestiaNamespace     string
 }
 
 func ReadCLIConfig(ctx *cli.Context) CLIConfig {
@@ -115,18 +143,29 @@ func ReadCLIConfig(ctx *cli.Context) CLIConfig {
 		S3AccessKeyID:     ctx.String(S3AccessKeyIDFlagName),
 		S3AccessKeySecret: ctx.String(S3AccessKeySecretFlagName),
 		UseGenericComm:    ctx.Bool(GenericCommFlagName),
+		CelestiaEndpoint:      ctx.String(CelestiaServerFlagName),
+		CelestiaAuthToken:     ctx.String(CelestiaAuthTokenFlagName),
+		CelestiaNamespace:     ctx.String(CelestiaNamespaceFlagName),
 	}
 }
 
 func (c CLIConfig) Check() error {
-	if !c.S3Enabled() && !c.FileStoreEnabled() {
+	if !c.S3Enabled() && !c.FileStoreEnabled() && !c.CelestiaEnabled() {
 		return errors.New("at least one storage backend must be enabled")
 	}
-	if c.S3Enabled() && c.FileStoreEnabled() {
+	if c.S3Enabled() && c.FileStoreEnabled() && c.CelestiaEnabled() {
 		return errors.New("only one storage backend can be enabled")
 	}
 	if c.S3Enabled() && (c.S3Bucket == "" || c.S3Endpoint == "" || c.S3AccessKeyID == "" || c.S3AccessKeySecret == "") {
 		return errors.New("all S3 flags must be set")
+	}
+	if c.CelestiaEnabled() && (c.CelestiaEndpoint == "" || c.CelestiaAuthToken == "" || c.CelestiaNamespace == "") {
+		return errors.New("all Celestia flags must be set")
+	}
+	if c.CelestiaEnabled() {
+		if _, err := hex.DecodeString(c.CelestiaNamespace); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -144,8 +183,21 @@ func (c CLIConfig) S3Config() S3Config {
 	}
 }
 
+func (c CLIConfig) CelestiaConfig() plasma.CelestiaConfig {
+	ns, _ := hex.DecodeString(c.CelestiaNamespace)
+	return plasma.CelestiaConfig{
+		URL:       c.CelestiaEndpoint,
+		AuthToken: c.CelestiaAuthToken,
+		Namespace: ns,
+	}
+}
+
 func (c CLIConfig) FileStoreEnabled() bool {
 	return c.FileStoreDirPath != ""
+}
+
+func (c CLIConfig) CelestiaEnabled() bool {
+	return !(c.CelestiaEndpoint == "" && c.CelestiaAuthToken == "" && c.CelestiaNamespace == "")
 }
 
 func CheckRequired(ctx *cli.Context) error {

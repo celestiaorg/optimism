@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM golang:1.21.1-alpine3.18 as builder
+FROM --platform=$BUILDPLATFORM golang:1.22.3-alpine3.18 as builder
 
 RUN apk add --no-cache make ca-certificates gcc musl-dev linux-headers git jq bash
 
