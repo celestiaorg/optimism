@@ -859,7 +859,7 @@ func (cfg SystemConfig) Start(t *testing.T, _opts ...SystemConfigOption) (*Syste
 		BatchType:            batchType,
 		DataAvailabilityType: sys.Cfg.DataAvailabilityType,
 		CompressionAlgo:      compressionAlgo,
-		DaConfig:             celestia.CLIConfig{DaRpc: "localhost:26650"},
+		DaConfig:             celestia.CLIConfig{Rpc: "localhost:26650"},
 	}
 	// Batch Submitter
 	batcher, err := bss.BatcherServiceFromCLIConfig(context.Background(), "0.0.1", batcherCLIConfig, sys.Cfg.Loggers["batcher"])

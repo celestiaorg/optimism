@@ -16,9 +16,6 @@ const (
 	// EthFallbackDisabledFlagName defines the flag for disabling eth fallback
 	EthFallbackDisabledFlagName = "da.eth_fallback_disabled"
 
-	// NamespaceSize is the size of the hex encoded namespace string
-	NamespaceSize = 58
-
 	// defaultRPC is the default rpc dial address
 	defaultRPC = "grpc://localhost:26650"
 )
