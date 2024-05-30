@@ -82,7 +82,7 @@ and changes required to the [docker-compose file](https://docs.celestia.org/deve
 Note that in this case, the auth token needs to be configured using the CELESTIA_NODE_AUTH_TOKEN environment variable.
 
 To obtain the auth token for celestia-node,
-check [the documentation for the node type you are using](https://docs.celestia.org/developers/node-tutorial#auth-token):
+check [the documentation for the node type you are using](https://docs.celestia.org/developers/node-tutorial#auth-token)
 
 Once the docker compose file is modified, you can run the devnet with the following command:
 
@@ -109,8 +109,9 @@ t=2024-05-30T19:08:34+0000 lvl=info msg="celestia: blob request" id=010c09000000
 
 As an alternative, you may wish to deploy OP stack and celestia-node both to testnets e.g. sepolia and mocha.
 
-In this case, follow the instructions for [Creating your own L2 Rollup Testnet](https://docs.optimism.io/builders/chain-operators/tutorials/create-l2-rollup)
-
+In this case, run a [celestia light node](https://docs.celestia.org/nodes/light-node#setting-up-your-light-node)
+and da-server, then follow the instructions for
+[creating your own L2 rollup testnet](https://docs.optimism.io/builders/chain-operators/tutorials/create-l2-rollup)
 including the following flags:
 
 ```sh
@@ -137,7 +138,7 @@ where `$CELESTIA_NODE_AUTH_TOKEN` is the auth token for the celestia-node and `$
 
 ### Troubleshooting:
 
-Check the logs for the da-server to see if it is running successfully:
+Check the logs for the `da-server` to see if it is running successfully:
 
 ```sh
 docker logs -f ops-bedrock-da-server-1
