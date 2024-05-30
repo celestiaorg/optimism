@@ -76,7 +76,8 @@ For running plasma in celestia testnet mode, we'll use the celestia-node docker 
 a [celestia testnet network like mocha or arabica](https://docs.celestia.org/nodes/participate).
 
 To run a celestia-node in testnet mode,
-[follow the instructions for docker changes](https://docs.celestia.org/developers/optimism#docker-changes)
+follow the instructions for [setting up a light node](https://docs.celestia.org/developers/optimism#setting-up-your-light-node)
+and changes required to the [docker-compose file](https://docs.celestia.org/developers/optimism#docker-changes)
 
 Note that in this case, the auth token needs to be configured using the CELESTIA_NODE_AUTH_TOKEN environment variable.
 
@@ -104,4 +105,46 @@ t=2024-05-30T19:08:30+0000 lvl=info msg="Using celestia storage" url=http://da:2
 t=2024-05-30T19:08:32+0000 lvl=info msg="celestia: blob successfully submitted" id=0900000000000000b25a32154ab00902cfc0269b3239b612ebfe7f7263545119ee7251cc72728142
 t=2024-05-30T19:08:34+0000 lvl=info msg="celestia: blob successfully submitted" id=0a00000000000000cb559bc3c6a01b0819460ce86c13165fdc58ac9c81c1e52404f8c4b36097db87
 t=2024-05-30T19:08:34+0000 lvl=info msg="celestia: blob request" id=010c0900000000000000b25a32154ab00902cfc0269b3239b612ebfe7f7263545119ee7251cc72728142
+```
+
+As an alternative, you may wish to deploy OP stack and celestia-node both to testnets e.g. sepolia and mocha.
+
+In this case, follow the instructions for [Creating your own L2 Rollup Testnet](https://docs.optimism.io/builders/chain-operators/tutorials/create-l2-rollup)
+
+including the following flags:
+
+```sh
+op-node
+      --plasma.enabled=true
+      --plasma.da-service=true
+```
+
+```sh
+op-batcher
+      --plasma.enabled=true
+      --plasma.da-service=true
+```
+
+```sh
+da-server
+      --generic-commitment=true
+      --celestia.server=http://localhost:26658
+      --celestia.auth-token=$CELESTIA_NODE_AUTH_TOKEN
+      --celestia.namespace=$NAMESPACE
+```
+
+where `$CELESTIA_NODE_AUTH_TOKEN` is the auth token for the celestia-node and `$NAMESPACE` is a random valid namespace.
+
+### Troubleshooting:
+
+Check the logs for the da-server to see if it is running successfully:
+
+```sh
+docker logs -f ops-bedrock-da-server-1
+```
+
+Additionally verify that the batcher is able to submit transactions to the celestia-node:
+
+```sh
+docker logs -f ops-bedrock-op-batcher-1
 ```
