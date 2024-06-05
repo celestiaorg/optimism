@@ -37,23 +37,27 @@ the celestia-node.
 
 Follow the usual instructions for setting up devnet.
 
-The following instructions are for testing the `da-server` in celestia devnet
-and testnet modes.
-
-There are two ways to test the `da-server` in celestia devnet and testnet
+There are two ways to test the celestia `da-server` in devnet and testnet
 modes.
 
 ### Using rollop:
 
 The first way uses a fork of [rollop](https://github.com/0xFableOrg/roll-op) to
-automate deployment.
+automate deployment. This method is recommended for beginners.
 
-Clone the [rollop](https://github.com/0xFableOrg/roll-op) repository and follow
-the instructions in the README to setup the rollop stack.
+Clone the [rollop](https://github.com/tuxcanfly/roll-op) repository, checkout
+the `plasma` branch and follow the instructions in the README to setup the
+rollop stack.
 
 ```sh
+git clone https://github.com/tuxcanfly/roll-op.git
+cd roll-op
+git checkout plasma
 ./rollop setup --yes
 ````
+
+rollop is configured to use `mocha-4` celestia network by default in both
+devnet and testnet modes.
 
 #### Devnet
 
@@ -64,7 +68,7 @@ command:
 ./rollop --clean devnet
 ```
 
-This will start the devnet in plasma mode with celestia-node running in devnet
+This will start the devnet in plasma mode with celestia-node running in testnet
 mode.
 
 You can verify that the devnet is running by checking da-server logs:
@@ -121,7 +125,9 @@ update the `--p2p.network` flag in `l2_batcher.py`, `l2_node.py` and
 
 ### Using docker-compose:
 
-The second way uses docker-comcompose to deploy the rollup stack.
+The second way to test the celestia `da-server` uses docker-compose to deploy
+the rollup stack. This method reuses the bedrock devnet docker-compose setup
+and is recommended for developers.
 
 #### Devnet:
 
