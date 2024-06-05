@@ -123,6 +123,20 @@ To configure the da-server to use a different celestia network, you'll need to
 update the `--p2p.network` flag in `l2_batcher.py`, `l2_node.py` and
 `celestia_light_node.py` for now. This will be configurable in the future.
 
+##### Troubleshooting:
+
+Check the logs for the `da-server` to see if it is running successfully:
+
+```sh
+tail -f deployments/rollup/logs/da_server.log
+```
+
+Additionally verify that the batcher is able to submit transactions to the celestia-node:
+
+```sh
+tail -f deployments/rollup/logs/l2_batcher.log
+```
+
 ### Using docker-compose:
 
 The second way to test the celestia `da-server` uses docker-compose to deploy
@@ -233,7 +247,7 @@ da-server
 
 where `$CELESTIA_NODE_AUTH_TOKEN` is the auth token for the celestia-node and `$NAMESPACE` is a random valid namespace.
 
-### Troubleshooting:
+##### Troubleshooting:
 
 Check the logs for the `da-server` to see if it is running successfully:
 
