@@ -21,7 +21,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto/kzg4844"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/params"
+)
+
+var (
+	usableBytesInBlob    = big.NewInt(int64(len(kzg4844.Blob{}) * 31 / 32))
+	blobTxBlobGasPerBlob = big.NewInt(params.BlobTxBlobGasPerBlob)
 )
 
 var ErrBatcherNotRunning = errors.New("batcher is not running")
@@ -481,6 +488,32 @@ func (l *BatchSubmitter) safeL1Origin(ctx context.Context) (eth.BlockID, error) 
 	return status.SafeL2.L1Origin, nil
 }
 
+// fallbackTxCandidate creates a tx candidate for the given txdata using either
+// 4844 blobs or calldata based on gas fee. It throws an error if fallback is
+// disabled.
+func (l *BatchSubmitter) fallbackTxCandidate(ctx context.Context, txdata txData) (*txmgr.TxCandidate, error) {
+	if l.DAClient.EthFallbackDisabled {
+		return nil, fmt.Errorf("celestia: fallback disabled")
+	}
+	_, baseFee, blobBaseFee, err := l.Txmgr.SuggestGasPriceCaps(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("could not get gas price info: %w", err)
+	}
+	blobBaseFee.Mul(blobBaseFee, blobTxBlobGasPerBlob)
+	blobBaseFee.Div(blobBaseFee, usableBytesInBlob)
+	calldataFeePerByte := baseFee.Mul(baseFee, big.NewInt(16))
+	if blobBaseFee.Cmp(calldataFeePerByte) <= 0 {
+		l.Log.Info("celestia: using 4844 fallback")
+		candidate, err := l.blobTxCandidate(txdata)
+		if err != nil {
+			return nil, fmt.Errorf("could not create blob tx candidate: %w", err)
+		}
+		return candidate, nil
+	}
+	l.Log.Info("celestia: using calldata fallback")
+	return l.calldataTxCandidate(txdata.CallData()), nil
+}
+
 // sendTransaction creates & queues for sending a transaction to the batch inbox address with the given `txData`.
 // The method will block if the queue's MaxPendingTransactions is exceeded.
 func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, queue *txmgr.Queue[txID], receiptsCh chan txmgr.TxReceipt[txID]) error {
@@ -517,13 +550,10 @@ func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, que
 		}
 		candidate, err = l.celestiaTxCandidate(data)
 		if err != nil {
-			if l.DAClient.EthFallbackDisabled {
-				return fmt.Errorf("celestia: blob submission failed; eth fallback disabled: %w", err)
-			}
-			l.Log.Info("celestia: blob submission failed; using 4844 fallback", "err", err)
-			candidate, err = l.blobTxCandidate(txdata)
+			l.Log.Error("celestia: blob submission failed", "err", err)
+			candidate, err = l.fallbackTxCandidate(ctx, txdata)
 			if err != nil {
-				return fmt.Errorf("could not create blob tx candidate: %w", err)
+				return fmt.Errorf("celestia: fallback failed: %w", err)
 			}
 		}
 	}
