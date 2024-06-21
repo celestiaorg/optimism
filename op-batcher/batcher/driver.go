@@ -534,7 +534,9 @@ func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, que
 			l.Log.Error("celestia: blob submission failed", "err", err)
 			candidate, err = l.fallbackTxCandidate(ctx, txdata)
 			if err != nil {
-				return fmt.Errorf("celestia: fallback failed: %w", err)
+				l.Log.Error("celestia: fallback failed", "err", err)
+				l.recordFailedTx(txdata.ID(), err)
+				return nil
 			}
 		}
 	}
