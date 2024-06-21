@@ -6,10 +6,13 @@ import (
 )
 
 func SetDAClient(cfg celestia.CLIConfig) error {
-	// NOTE: for reading from the DA, the fallback mode doesn't matter
-	// because we always read using blob_data_source.go which is
-	// the most permissive mode.
-	client, err := celestia.NewDAClient(cfg.Rpc, cfg.AuthToken, cfg.Namespace, celestia.FallbackModeBlobData)
+	// NOTE: for reading from the DA, we always read using blob_data_source.go
+	// Based on the calldata prefix, it may either read from the DA or from the L1 chain.
+	// In addition, it always reads from the DA for blobs.
+	// See dataAndHashesFromTxs and DataFromEVMTransactions
+	// The read path is independent of the fallback mode.
+	// Therefore the configuration value for FallbackModeBlobData passed here does not matter.
+	client, err := celestia.NewDAClient(cfg.Rpc, cfg.AuthToken, cfg.Namespace, cfg.FallbackMode)
 	if err != nil {
 		return err
 	}

@@ -56,10 +56,13 @@ func CLIFlags(envPrefix string) []cli.Flag {
 		},
 		&cli.BoolFlag{
 			Name:    EthFallbackDisabledFlagName,
-			Usage:   "disable eth fallback",
+			Usage:   "disable eth fallback (deprecated, use FallbackModeFlag instead)",
 			EnvVars: opservice.PrefixEnvVar(envPrefix, "DA_ETH_FALLBACK_DISABLED"),
 			Action: func(c *cli.Context, e bool) error {
-				return fmt.Errorf("this flag is deprecated, use the %s flag and it to %s instead", FallbackModeFlagName, FallbackModeDisabled)
+				if e {
+					return c.Set(FallbackModeFlagName, FallbackModeDisabled)
+				}
+				return nil
 			},
 		},
 		&cli.StringFlag{
