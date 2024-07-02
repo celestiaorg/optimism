@@ -481,6 +481,20 @@ func (l *BatchSubmitter) safeL1Origin(ctx context.Context) (eth.BlockID, error) 
 	return status.SafeL2.L1Origin, nil
 }
 
+// fallbackTxCandidate creates a fallback tx candidate for the given txdata.
+func (l *BatchSubmitter) fallbackTxCandidate(_ context.Context, txdata txData) (*txmgr.TxCandidate, error) {
+	switch l.DAClient.FallbackMode {
+	case celestia.FallbackModeBlobData:
+		return l.blobTxCandidate(txdata)
+	case celestia.FallbackModeCallData:
+		return l.calldataTxCandidate(txdata.CallData()), nil
+	case celestia.FallbackModeDisabled:
+		return nil, fmt.Errorf("celestia: fallback disabled")
+	default:
+		return nil, fmt.Errorf("celestia: unknown fallback mode: %s", l.DAClient.FallbackMode)
+	}
+}
+
 // sendTransaction creates & queues for sending a transaction to the batch inbox address with the given `txData`.
 // The method will block if the queue's MaxPendingTransactions is exceeded.
 func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, queue *txmgr.Queue[txID], receiptsCh chan txmgr.TxReceipt[txID]) error {
@@ -515,10 +529,15 @@ func (l *BatchSubmitter) sendTransaction(ctx context.Context, txdata txData, que
 			// signal plasma commitment tx with TxDataVersion1
 			data = comm.TxData()
 		}
-		candidate, err = l.calldataTxCandidate(data)
+		candidate, err = l.celestiaTxCandidate(data)
 		if err != nil {
-			l.recordFailedTx(txdata.ID(), err)
-			return nil
+			l.Log.Error("celestia: blob submission failed", "err", err)
+			candidate, err = l.fallbackTxCandidate(ctx, txdata)
+			if err != nil {
+				l.Log.Error("celestia: fallback failed", "err", err)
+				l.recordFailedTx(txdata.ID(), err)
+				return nil
+			}
 		}
 	}
 
@@ -550,25 +569,28 @@ func (l *BatchSubmitter) blobTxCandidate(data txData) (*txmgr.TxCandidate, error
 	}, nil
 }
 
-func (l *BatchSubmitter) calldataTxCandidate(data []byte) (*txmgr.TxCandidate, error) {
+func (l *BatchSubmitter) calldataTxCandidate(data []byte) *txmgr.TxCandidate {
 	l.Log.Info("Building Calldata transaction candidate", "size", len(data))
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Duration(l.RollupConfig.BlockTime)*time.Second)
-	ids, err := l.DAClient.Client.Submit(ctx, [][]byte{data}, -1, l.DAClient.Namespace)
-	cancel()
-	if err == nil && len(ids) == 1 {
-		l.Log.Info("celestia: blob successfully submitted", "id", hex.EncodeToString(ids[0]))
-		data = append([]byte{celestia.DerivationVersionCelestia}, ids[0]...)
-	} else {
-		if l.DAClient.EthFallbackDisabled {
-			return nil, fmt.Errorf("celestia: blob submission failed; eth fallback disabled: %w", err)
-		}
-
-		l.Log.Info("celestia: blob submission failed; falling back to eth", "err", err)
-	}
 	return &txmgr.TxCandidate{
 		To:     &l.RollupConfig.BatchInboxAddress,
 		TxData: data,
-	}, nil
+	}
+}
+
+func (l *BatchSubmitter) celestiaTxCandidate(data []byte) (*txmgr.TxCandidate, error) {
+	l.Log.Info("Building Celestia transaction candidate", "size", len(data))
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Duration(l.RollupConfig.BlockTime)*time.Second)
+	ids, err := l.DAClient.Client.Submit(ctx, [][]byte{data}, -1, l.DAClient.Namespace)
+	cancel()
+	if err != nil {
+		return nil, err
+	}
+	if len(ids) != 1 {
+		return nil, fmt.Errorf("celestia: expected 1 id, got %d", len(ids))
+	}
+	l.Log.Info("celestia: blob successfully submitted", "id", hex.EncodeToString(ids[0]))
+	data = append([]byte{celestia.DerivationVersionCelestia}, ids[0]...)
+	return l.calldataTxCandidate(data), nil
 }
 
 func (l *BatchSubmitter) handleReceipt(r txmgr.TxReceipt[txID]) {
