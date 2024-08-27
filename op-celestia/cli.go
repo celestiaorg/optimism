@@ -28,12 +28,17 @@ const (
 	EthFallbackDisabledFlagName = "da.eth_fallback_disabled"
 	// FallbackModeFlagName defines the flag for fallback mode
 	FallbackModeFlagName = "da.fallback_mode"
+	// GasPriceFlagName defines the flag for gas price
+	GasPriceFlagName = "da.gas_price"
 
 	// NamespaceSize is the size of the hex encoded namespace string
 	NamespaceSize = 58
 
 	// defaultRPC is the default rpc dial address
 	defaultRPC = "grpc://localhost:26650"
+
+	// defaultGasPrice is the default gas price
+	defaultGasPrice = -1
 )
 
 func CLIFlags(envPrefix string) []cli.Flag {
@@ -77,6 +82,12 @@ func CLIFlags(envPrefix string) []cli.Flag {
 				return nil
 			},
 		},
+		&cli.Float64Flag{
+			Name:    GasPriceFlagName,
+			Usage:   "gas price of the data availability client",
+			Value:   defaultGasPrice,
+			EnvVars: opservice.PrefixEnvVar(envPrefix, "DA_GAS_PRICE"),
+		},
 	}
 }
 
@@ -85,6 +96,7 @@ type CLIConfig struct {
 	AuthToken    string
 	Namespace    string
 	FallbackMode string
+	GasPrice     float64
 }
 
 func (c CLIConfig) Check() error {
@@ -103,5 +115,6 @@ func ReadCLIConfig(ctx *cli.Context) CLIConfig {
 		AuthToken:    ctx.String(AuthTokenFlagName),
 		Namespace:    ctx.String(NamespaceFlagName),
 		FallbackMode: ctx.String(FallbackModeFlagName),
+		GasPrice:     ctx.Float64(GasPriceFlagName),
 	}
 }

@@ -14,9 +14,10 @@ type DAClient struct {
 	GetTimeout   time.Duration
 	Namespace    da.Namespace
 	FallbackMode string
+	GasPrice     float64
 }
 
-func NewDAClient(rpc, token, namespace, fallbackMode string) (*DAClient, error) {
+func NewDAClient(rpc, token, namespace, fallbackMode string, gasPrice float64) (*DAClient, error) {
 	client, err := proxy.NewClient(rpc, token)
 	if err != nil {
 		return nil, err
@@ -33,5 +34,6 @@ func NewDAClient(rpc, token, namespace, fallbackMode string) (*DAClient, error) 
 		GetTimeout:   time.Minute,
 		Namespace:    ns,
 		FallbackMode: fallbackMode,
+		GasPrice:     gasPrice,
 	}, nil
 }
