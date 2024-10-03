@@ -210,7 +210,6 @@ func (bs *BatcherService) initChannelConfig(cfg *CLIConfig) error {
 		MaxChannelDuration:    cfg.MaxChannelDuration,
 		MaxFrameSize:          cfg.MaxL1TxSize - 1, // account for version byte prefix; reset for blobs
 		MaxBlocksPerSpanBatch: cfg.MaxBlocksPerSpanBatch,
-		MultiFrameTxs:         cfg.MultiFrameTxs,
 		TargetNumFrames:       cfg.TargetNumFrames,
 		SubSafetyMargin:       cfg.SubSafetyMargin,
 		BatchType:             cfg.BatchType,
@@ -223,7 +222,7 @@ func (bs *BatcherService) initChannelConfig(cfg *CLIConfig) error {
 
 	// enable multi-frame txs if set
 	if cfg.MultiFrameTxs {
-		cc.MultiFrameTxs = true
+		cc.UseBlobs = true
 	}
 
 	switch cfg.DataAvailabilityType {
@@ -262,7 +261,7 @@ func (bs *BatcherService) initChannelConfig(cfg *CLIConfig) error {
 	bs.Log.Info("Initialized channel-config",
 		"da_type", cfg.DataAvailabilityType,
 		"use_alt_da", bs.UseAltDA,
-		"multi_frame_txs", cc.MultiFrameTxs,
+		"use_blobs", cc.UseBlobs,
 		"max_frame_size", cc.MaxFrameSize,
 		"target_num_frames", cc.TargetNumFrames,
 		"compressor", cc.CompressorConfig.Kind,
