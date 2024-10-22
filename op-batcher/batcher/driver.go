@@ -770,7 +770,7 @@ func (l *BatchSubmitter) publishTxToL1(ctx context.Context, queue *txmgr.Queue[t
 		return err
 	}
 
-	if err = l.sendTransaction(txdata, queue, receiptsCh, daGroup); err != nil {
+	if err = l.sendTransaction(txdata, queue, receiptsCh, daGroup, isPectra); err != nil {
 		return fmt.Errorf("BatchSubmitter.sendTransaction failed: %w", err)
 	}
 	return nil
@@ -876,7 +876,7 @@ func (l *BatchSubmitter) fallbackTxCandidate(txdata txData) (*txmgr.TxCandidate,
 // sendTransaction creates & queues for sending a transaction to the batch inbox address with the given `txData`.
 // This call will block if the txmgr queue is at the  max-pending limit.
 // The method will block if the queue's MaxPendingTransactions is exceeded.
-func (l *BatchSubmitter) sendTransaction(txdata txData, queue *txmgr.Queue[txRef], receiptsCh chan txmgr.TxReceipt[txRef], daGroup *errgroup.Group) error {
+func (l *BatchSubmitter) sendTransaction(txdata txData, queue *txmgr.Queue[txRef], receiptsCh chan txmgr.TxReceipt[txRef], daGroup *errgroup.Group, isPectra bool) error {
 	var err error
 
 	// if Alt DA is enabled we post the txdata to the DA Provider and replace it with the commitment.
@@ -886,31 +886,27 @@ func (l *BatchSubmitter) sendTransaction(txdata txData, queue *txmgr.Queue[txRef
 		return nil
 	}
 
-	var candidate *txmgr.TxCandidate
-	if txdata.asBlob {
-		if candidate, err = l.blobTxCandidate(txdata); err != nil {
-			// We could potentially fall through and try a calldata tx instead, but this would
-			// likely result in the chain spending more in gas fees than it is tuned for, so best
-			// to just fail. We do not expect this error to trigger unless there is a serious bug
-			// or configuration issue.
-			return fmt.Errorf("could not create blob tx candidate: %w", err)
-		}
-	} else {
-		// sanity check
-		if nf := len(txdata.frames); nf > l.ChannelConfig.ChannelConfig().TargetNumFrames {
-			l.Log.Crit("Unexpected number of frames in calldata tx", "num_frames", nf)
-		}
-		candidate, err = l.celestiaTxCandidate(txdata.CallData())
+	// force celestia tx candidate, multiframe is set by UseBlobs which is not affected
+	txdata.asBlob = false
+	// sanity check
+	if nf := len(txdata.frames); nf > l.ChannelConfig.ChannelConfig(isPectra).TargetNumFrames {
+		l.Log.Crit("Unexpected number of frames in calldata tx", "num_frames", nf)
+	}
+	candidate, err := l.celestiaTxCandidate(txdata.CallData())
+	if err != nil {
+		l.Log.Error("celestia: blob submission failed", "err", err)
+		candidate, err = l.fallbackTxCandidate(txdata)
 		if err != nil {
-			l.Log.Error("celestia: blob submission failed", "err", err)
-			candidate, err = l.fallbackTxCandidate(txdata)
-			if err != nil {
-				l.Log.Error("celestia: fallback failed", "err", err)
-				l.recordFailedTx(txdata.ID(), err)
-				return nil
-			}
+			l.Log.Error("celestia: fallback failed", "err", err)
+			l.recordFailedTx(txdata.ID(), err)
+			return nil
 		}
 	}
+	// restore asBlob for cancellation in case of blobdata fallback
+	if len(candidate.Blobs) > 0 {
+		txdata.asBlob = true
+	}
+	l.Log.Info("tx candidate", "ID", txdata.ID(), "len(txdata.frames)", len(txdata.frames), "txdata.asBlob", txdata.asBlob)
 
 	l.sendTx(txdata, false, candidate, queue, receiptsCh)
 	return nil
