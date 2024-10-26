@@ -76,11 +76,6 @@ Governance discussion can also be found on the [Optimism Governance Forum](https
 General discussion happens most frequently on the [Celestia discord](https://discord.com/invite/YsnTPcSfWQ).
 Other discussions can be found on the [Celestia forum](https://forum.celestia.org).
 
-## Community
-
-General discussion happens most frequently on the [Optimism discord](https://discord.gg/optimism).
-Governance discussion can also be found on the [Optimism Governance Forum](https://gov.optimism.io/).
-
 ## Contributing
 
 The OP Stack is a collaborative project. By collaborating on free, open software and shared standards, the Optimism Collective aims to prevent siloed software development and rapidly accelerate the development of the Ethereum ecosystem. Come contribute, build the future, and redefine power, together.
