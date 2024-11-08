@@ -51,7 +51,7 @@ require (
 	golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa
 	golang.org/x/sync v0.8.0
 	golang.org/x/term v0.25.0
-	golang.org/x/time v0.7.0
+	golang.org/x/time v0.8.0
 	lukechampine.com/uint128 v1.3.0
 )
 
