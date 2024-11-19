@@ -186,7 +186,7 @@ jobs:
           -- -parallel="$(nproc)" -coverpkg=github.com/ethereum-optimism/optimism/cannon/... -coverprofile=coverage.out ./...
 
       - name: Upload coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: ./cannon/coverage.out
           flags: cannon-go-tests
