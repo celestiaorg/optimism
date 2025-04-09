@@ -1,31 +1,33 @@
 package celestia
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 	"time"
 
-	"github.com/rollkit/go-da"
-	"github.com/rollkit/go-da/proxy"
+	client "github.com/celestiaorg/celestia-openrpc"
+	"github.com/celestiaorg/celestia-openrpc/types/share"
 )
 
 type DAClient struct {
-	Client       da.DA
+	Client       *client.Client
 	GetTimeout   time.Duration
-	Namespace    da.Namespace
+	Namespace    share.Namespace
 	FallbackMode string
 	GasPrice     float64
 }
 
 func NewDAClient(rpc, token, namespace, fallbackMode string, gasPrice float64) (*DAClient, error) {
-	client, err := proxy.NewClient(rpc, token)
+	client, err := client.NewClient(context.Background(), rpc, token)
 	if err != nil {
 		return nil, err
 	}
-	ns, err := hex.DecodeString(namespace)
+	nsBytes, err := hex.DecodeString(namespace)
 	if err != nil {
 		return nil, err
 	}
+	ns, err := share.NewBlobNamespaceV0(nsBytes)
 	if fallbackMode != "disabled" && fallbackMode != "blobdata" && fallbackMode != "calldata" {
 		return nil, fmt.Errorf("celestia: unknown fallback mode: %s", fallbackMode)
 	}

@@ -13,6 +13,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
+	"github.com/celestiaorg/celestia-openrpc/types/blob"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
@@ -956,17 +957,19 @@ func (l *BatchSubmitter) calldataTxCandidate(data []byte) *txmgr.TxCandidate {
 
 func (l *BatchSubmitter) celestiaTxCandidate(data []byte) (*txmgr.TxCandidate, error) {
 	l.Log.Info("Building Celestia transaction candidate", "size", len(data))
+	dataBlob, err := blob.NewBlobV0(l.DAClient.Namespace, data)
+	if err != nil {
+		return nil, err
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Duration(l.RollupConfig.BlockTime)*time.Second)
-	ids, err := l.DAClient.Client.Submit(ctx, [][]byte{data}, l.DAClient.GasPrice, l.DAClient.Namespace)
+	height, err := l.DAClient.Client.Blob.Submit(ctx, []*blob.Blob{dataBlob}, blob.NewSubmitOptions(blob.WithGasPrice(l.DAClient.GasPrice)))
 	cancel()
 	if err != nil {
 		return nil, err
 	}
-	if len(ids) != 1 {
-		return nil, fmt.Errorf("celestia: expected 1 id, got %d", len(ids))
-	}
-	l.Log.Info("celestia: blob successfully submitted", "id", hex.EncodeToString(ids[0]))
-	data = append([]byte{celestia.DerivationVersionCelestia}, ids[0]...)
+	id := celestia.MakeID(height, dataBlob.Commitment)
+	l.Log.Info("celestia: blob successfully submitted", "id", hex.EncodeToString(id))
+	data = append([]byte{celestia.DerivationVersionCelestia}, id...)
 	return l.calldataTxCandidate(data), nil
 }
 
