@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	celestia "github.com/ethereum-optimism/optimism/op-celestia"
 	op_e2e "github.com/ethereum-optimism/optimism/op-e2e"
 
 	"github.com/ethereum-optimism/optimism/op-e2e/e2eutils/geth"
@@ -46,6 +47,7 @@ func TestSystemP2PAltSync(t *testing.T) {
 			SequencerEnabled:   false,
 		},
 		L1EpochPollInterval: time.Second * 4,
+		DaConfig:            celestia.ReadCLIConfigFromEnv("OP_E2E"),
 	}
 	cfg.Nodes["bob"] = &rollupNode.Config{
 		Driver: driver.Config{
@@ -54,6 +56,7 @@ func TestSystemP2PAltSync(t *testing.T) {
 			SequencerEnabled:   false,
 		},
 		L1EpochPollInterval: time.Second * 4,
+		DaConfig:            celestia.ReadCLIConfigFromEnv("OP_E2E"),
 	}
 	cfg.Loggers["alice"] = testlog.Logger(t, log.LevelInfo).New("role", "alice")
 	cfg.Loggers["bob"] = testlog.Logger(t, log.LevelInfo).New("role", "bob")
@@ -128,6 +131,7 @@ func TestSystemP2PAltSync(t *testing.T) {
 				syncedPayloads = append(syncedPayloads, payload.ExecutionPayload.ID().String())
 			},
 		},
+		DaConfig: celestia.ReadCLIConfigFromEnv("OP_E2E"),
 	}
 	e2esys.ConfigureL1(syncNodeCfg, sys.EthInstances["l1"], sys.L1BeaconEndpoint())
 	syncerL2Engine, err := geth.InitL2("syncer", sys.L2GenesisCfg, cfg.JWTFilePath)

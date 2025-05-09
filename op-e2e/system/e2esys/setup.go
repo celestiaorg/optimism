@@ -158,7 +158,7 @@ func DefaultSystemConfig(t testing.TB, opts ...SystemConfigOpt) SystemConfig {
 				RuntimeConfigReloadInterval: time.Minute * 10,
 				ConfigPersistence:           &rollupNode.DisabledConfigPersistence{},
 				Sync:                        sync.Config{SyncMode: sync.CLSync},
-				DaConfig:                    celestia.CLIConfig{Rpc: "grpc://localhost:26650"},
+				DaConfig:                    celestia.ReadCLIConfigFromEnv("OP_E2E"),
 			},
 			RoleVerif: {
 				Driver: driver.Config{
@@ -175,7 +175,7 @@ func DefaultSystemConfig(t testing.TB, opts ...SystemConfigOpt) SystemConfig {
 				RuntimeConfigReloadInterval: time.Minute * 10,
 				ConfigPersistence:           &rollupNode.DisabledConfigPersistence{},
 				Sync:                        sync.Config{SyncMode: sync.CLSync},
-				DaConfig:                    celestia.CLIConfig{Rpc: "grpc://localhost:26650"},
+				DaConfig:                    celestia.ReadCLIConfigFromEnv("OP_E2E"),
 			},
 		},
 		Loggers: map[string]log.Logger{
@@ -1006,7 +1006,7 @@ func (cfg SystemConfig) Start(t *testing.T, startOpts ...StartOption) (*System, 
 		DataAvailabilityType:  sys.Cfg.DataAvailabilityType,
 		CompressionAlgo:       derive.Zlib,
 		AltDA:                 batcherAltDACLIConfig,
-		DaConfig:              celestia.CLIConfig{Rpc: "localhost:26650"},
+		DaConfig:              celestia.ReadCLIConfigFromEnv("OP_E2E"),
 	}
 
 	// Apply batcher cli modifications

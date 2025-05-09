@@ -2,7 +2,10 @@ package celestia
 
 import (
 	"fmt"
+	"os"
+	"strconv"
 
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/urfave/cli/v2"
 
 	opservice "github.com/ethereum-optimism/optimism/op-service"
@@ -117,4 +120,43 @@ func ReadCLIConfig(ctx *cli.Context) CLIConfig {
 		FallbackMode: ctx.String(FallbackModeFlagName),
 		GasPrice:     ctx.Float64(GasPriceFlagName),
 	}
+}
+
+func ReadCLIConfigFromEnv(envPrefix string) CLIConfig {
+	result := CLIConfig{
+		Rpc:          defaultRPC,
+		FallbackMode: FallbackModeCallData,
+		GasPrice:     defaultGasPrice,
+	}
+
+	if value := os.Getenv(envPrefix + "_" + "DA_RPC"); value != "" {
+		result.Rpc = value
+	}
+
+	if value := os.Getenv(envPrefix + "_" + "DA_AUTH_TOKEN"); value != "" {
+		result.AuthToken = value
+	}
+
+	if value := os.Getenv(envPrefix + "_" + "DA_NAMESPACE"); value != "" {
+		result.Namespace = value
+	}
+
+	if value := os.Getenv(envPrefix + "_" + "DA_FALLBACK_MODE"); value != "" {
+		switch value {
+		case FallbackModeDisabled, FallbackModeBlobData, FallbackModeCallData:
+			result.FallbackMode = value
+		default:
+			log.Crit("invalid fallback mode", "value", value)
+		}
+	}
+
+	if value := os.Getenv(envPrefix + "_" + "DA_GAS_PRICE"); value != "" {
+		if parsed, err := strconv.ParseFloat(value, 64); err == nil {
+			result.GasPrice = parsed
+		} else {
+			log.Crit("invalid gas price", "value", value)
+		}
+	}
+
+	return result
 }

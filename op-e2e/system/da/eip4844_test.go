@@ -45,13 +45,17 @@ func TestSystem4844E2E_Calldata(t *testing.T) {
 	testSystem4844E2E(t, false, batcherFlags.CalldataType)
 }
 
-func TestSystem4844E2E_SingleBlob(t *testing.T) {
-	testSystem4844E2E(t, false, batcherFlags.BlobsType)
-}
+// Celestia: We disabled this test because when Celestia is used, we always write to calldata.
+// TODO: re-enable this test after we add the ability to switch off Celestia.
+// func TestSystem4844E2E_SingleBlob(t *testing.T) {
+// 	testSystem4844E2E(t, false, batcherFlags.BlobsType)
+// }
 
-func TestSystem4844E2E_MultiBlob(t *testing.T) {
-	testSystem4844E2E(t, true, batcherFlags.BlobsType)
-}
+// Celestia: We disabled this test because when Celestia is used, we always write to calldata.
+// TODO: re-enable this test after we add the ability to switch off Celestia.
+// func TestSystem4844E2E_MultiBlob(t *testing.T) {
+// 	testSystem4844E2E(t, true, batcherFlags.BlobsType)
+// }
 
 func testSystem4844E2E(t *testing.T, multiBlob bool, daType batcherFlags.DataAvailabilityType) {
 	op_e2e.InitParallel(t)
@@ -275,6 +279,14 @@ func TestBatcherAutoDA(t *testing.T) {
 	cfg.DisableTxForwarder = true
 	cfg.DisableBatcher = true // disable batcher because we start it manually later
 	sys, err := cfg.Start(t)
+
+	if sys.BatchSubmitter.DAClient != nil {
+		// Celestia: We disabled this test because when Celestia is used, we always write to calldata.
+		// TODO: re-enable this test after we add the ability to switch off Celestia.
+		log.Info("skipping TestBatcherAutoDA")
+		return
+	}
+
 	require.NoError(t, err, "Error starting up system")
 	log := testlog.Logger(t, log.LevelInfo)
 	log.Info("genesis", "l2", sys.RollupConfig.Genesis.L2, "l1", sys.RollupConfig.Genesis.L1, "l2_time", sys.RollupConfig.Genesis.L2Time)

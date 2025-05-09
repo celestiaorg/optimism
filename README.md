@@ -99,16 +99,32 @@ Celestia as the data availability (DA) layer.
 
 Currently, the tests assume a working [Celestia devnet](https://github.com/rollkit/local-celestia-devnet) running locally:
 
-```bash
-docker run -p 26650:26650 ghcr.io/rollkit/local-celestia-devnet:v0.12.7
+```sh
+CELESTIA_DEVNET_CONTAINER_ID=$(docker run -d -p 26658:26658 ghcr.io/rollkit/local-celestia-devnet:v0.13.1)
+echo "$CELESTIA_DEVNET_CONTAINER_ID"
+```
+
+To communicate with the Celestia node, we need to prepare an authentication token and a namespace:
+
+```sh
+export OP_E2E_DA_AUTH_TOKEN=$(docker exec "$CELESTIA_DEVNET_CONTAINER_ID" celestia bridge auth admin --node.store "~/bridge")
+echo "$OP_E2E_DA_AUTH_TOKEN"
+
+export OP_E2E_DA_NAMESPACE="00000000000000000000000000000000000000$(head -c 10 /dev/urandom | xxd -p -c 10)"
+echo "$OP_E2E_DA_NAMESPACE"
+
+export OP_E2E_DA_RPC='http://localhost:26658'
+export OP_E2E_DA_FALLBACK_MODE='calldata'
 ```
 
 The e2e tests can be triggered with:
 
-```bash
+```sh
 cd $HOME/optimism
 cd op-e2e
-OP_E2E_DISABLE_PARALLEL=true OP_E2E_CANNON_ENABLED=false OP_NODE_DA_RPC=localhost:26650 OP_BATCHER_DA_RPC=localhost:26650 make test
+export OP_E2E_DISABLE_PARALLEL='true'
+export OP_E2E_CANNON_ENABLED='false'
+make test
 ```
 
 ## Bridging

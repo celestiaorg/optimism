@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	celestia "github.com/ethereum-optimism/optimism/op-celestia"
 	op_e2e "github.com/ethereum-optimism/optimism/op-e2e"
 
 	"github.com/ethereum-optimism/optimism/op-e2e/system/e2esys"
@@ -306,6 +307,7 @@ func setupBatcher(t *testing.T, sys *e2esys.System, conductors map[string]*condu
 		DataAvailabilityType:         batcherFlags.CalldataType,
 		ActiveSequencerCheckDuration: 0,
 		CompressionAlgo:              derive.Zlib,
+		DaConfig:                     celestia.ReadCLIConfigFromEnv("OP_E2E"),
 	}
 
 	batcher, err := bss.BatcherServiceFromCLIConfig(context.Background(), "0.0.1", batcherCLIConfig, sys.Cfg.Loggers["batcher"])
@@ -364,6 +366,7 @@ func sequencerCfg(conductorRPCEndpoint rollupNode.ConductorRPCFunc) *rollupNode.
 		ConductorEnabled:            true,
 		ConductorRpc:                conductorRPCEndpoint,
 		ConductorRpcTimeout:         5 * time.Second,
+		DaConfig:                    celestia.ReadCLIConfigFromEnv("OP_E2E"),
 	}
 }
 
