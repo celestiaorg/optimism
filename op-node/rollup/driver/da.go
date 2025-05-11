@@ -17,9 +17,12 @@ func SetDAClient(cfg celestia.CLIConfig) error {
 	// The read path always operates in the most permissive mode and is
 	// independent of the fallback mode.
 	// Therefore the configuration value for FallbackMode passed here does not matter.
+	if !cfg.Enabled {
+		return derive.SetCelestiaDA(nil)
+	}
 	client, err := celestia.NewDAClient(cfg.Rpc, cfg.AuthToken, cfg.Namespace, cfg.FallbackMode, cfg.GasPrice)
 	if err != nil {
 		return err
 	}
-	return derive.SetDAClient(client)
+	return derive.SetCelestiaDA(client)
 }

@@ -113,6 +113,7 @@ echo "$OP_E2E_DA_AUTH_TOKEN"
 export OP_E2E_DA_NAMESPACE="00000000000000000000000000000000000000$(head -c 10 /dev/urandom | xxd -p -c 10)"
 echo "$OP_E2E_DA_NAMESPACE"
 
+export OP_E2E_DA_ENABLED='true'
 export OP_E2E_DA_RPC='http://localhost:26658'
 export OP_E2E_DA_FALLBACK_MODE='calldata'
 ```

@@ -146,9 +146,6 @@ func (bs *BatcherService) initFromCLIConfig(ctx context.Context, version string,
 		return fmt.Errorf("failed to init profiling: %w", err)
 	}
 	// init before driver
-	if err := bs.initAltDA(cfg); err != nil {
-		return fmt.Errorf("failed to init AltDA: %w", err)
-	}
 	if err := bs.initDA(cfg); err != nil {
 		return fmt.Errorf("failed to start da server: %w", err)
 	}

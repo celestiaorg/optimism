@@ -85,7 +85,7 @@ func RunProgram(logger log.Logger, preimageOracle io.ReadWriter, preimageHinter 
 	if cfg.DB == nil {
 		return fmt.Errorf("%w: db config is required", errInvalidConfig)
 	}
-	derive.SetDAClient(cfg.DAClient)
+	derive.SetCelestiaDA(cfg.DAClient)
 	bootInfo := boot.NewBootstrapClient(pClient).BootInfo()
 	derivationOptions := tasks.DerivationOptions{StoreBlockData: cfg.StoreBlockData, SkipValidation: cfg.SkipValidation}
 	return RunPreInteropProgram(logger, bootInfo, l1PreimageOracle, l2PreimageOracle, cfg.DB, derivationOptions)
