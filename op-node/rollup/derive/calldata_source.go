@@ -107,34 +107,43 @@ func DataFromEVMTransactions(dsCfg DataSourceConfig, batcherAddr common.Address,
 	out := []eth.Data{}
 	for _, tx := range txs {
 		if isValidBatchTx(tx, dsCfg.l1Signer, dsCfg.batchInboxAddress, batcherAddr, log) {
-			data := tx.Data()
-			switch len(data) {
-			case 0:
+			data, err := processTransactionData(tx.Data(), log)
+			if err != nil {
+				return nil, err
+			}
+			if data != nil {
 				out = append(out, data)
-			default:
-				switch data[0] {
-				case celestia.DerivationVersionCelestia:
-					log.Info("celestia: blob request", "id", hex.EncodeToString(tx.Data()))
-					ctx, cancel := context.WithTimeout(context.Background(), daClient.GetTimeout)
-					blobs, err := daClient.Client.Get(ctx, [][]byte{data[1:]}, daClient.Namespace)
-					cancel()
-					if err != nil {
-						return nil, NewResetError(fmt.Errorf("celestia: failed to resolve frame: %w", err))
-					}
-					if len(blobs) != 1 {
-						log.Warn("celestia: unexpected length for blobs", "expected", 1, "got", len(blobs))
-						if len(blobs) == 0 {
-							log.Warn("celestia: skipping empty blobs")
-							continue
-						}
-					}
-					out = append(out, blobs[0])
-				default:
-					out = append(out, data)
-					log.Info("celestia: using eth fallback")
-				}
 			}
 		}
 	}
 	return out, nil
+}
+
+// processTransactionData processes the transaction data based on its format and returns the appropriate data.
+// Returns nil data if the transaction should be skipped (e.g., empty blobs from Celestia).
+func processTransactionData(txData []byte, log log.Logger) ([]byte, error) {
+	if len(txData) == 0 {
+		return nil, nil
+	}
+	switch txData[0] {
+		case celestia.DerivationVersionCelestia:
+		log.Info("celestia: blob request", "id", hex.EncodeToString(txData))
+		ctx, cancel := context.WithTimeout(context.Background(), daClient.GetTimeout)
+		blobs, err := daClient.Client.Get(ctx, [][]byte{txData[1:]}, daClient.Namespace)
+		cancel()
+		if err != nil {
+			return nil, NewResetError(fmt.Errorf("celestia: failed to resolve frame: %w", err))
+		}
+		if len(blobs) != 1 {
+			log.Warn("celestia: unexpected length for blobs", "expected", 1, "got", len(blobs))
+			if len(blobs) == 0 {
+				log.Warn("celestia: skipping empty blobs")
+				return nil, nil // Return nil to indicate this transaction should be skipped
+			}
+		}
+		return blobs[0], nil
+		default:
+		log.Info("celestia: using eth fallback")
+		return txData, nil
+	}
 }

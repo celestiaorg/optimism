@@ -21,6 +21,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/rollkit/go-da"
 
 	altda "github.com/ethereum-optimism/optimism/op-alt-da"
 	"github.com/ethereum-optimism/optimism/op-batcher/metrics"
@@ -935,7 +936,12 @@ func (l *BatchSubmitter) sendTransaction(txdata txData, queue *txmgr.Queue[txRef
 	if nf := len(txdata.frames); nf > l.ChannelConfig.ChannelConfig(isPectra).TargetNumFrames {
 		l.Log.Crit("Unexpected number of frames in calldata tx", "num_frames", nf)
 	}
-	candidate, err := l.celestiaTxCandidate(txdata.CallData())
+	blobs, err := txdata.Blobs()
+	if err != nil {
+		l.Log.Error("celestia: blob submission failed", "err", err)
+		return err
+	}
+	candidate, err := l.celestiaTxCandidate(blobs)
 	if err != nil {
 		l.Log.Error("celestia: blob submission failed", "err", err)
 		candidate, err = l.fallbackTxCandidate(txdata)
@@ -997,20 +1003,38 @@ func (l *BatchSubmitter) calldataTxCandidate(data []byte) *txmgr.TxCandidate {
 	}
 }
 
-func (l *BatchSubmitter) celestiaTxCandidate(data []byte) (*txmgr.TxCandidate, error) {
-	l.Log.Info("Building Celestia transaction candidate", "size", len(data))
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Duration(l.RollupConfig.BlockTime)*time.Second)
-	ids, err := l.DAClient.Client.Submit(ctx, [][]byte{data}, l.DAClient.GasPrice, l.DAClient.Namespace)
-	cancel()
-	if err != nil {
-		return nil, err
+func (l *BatchSubmitter) celestiaTxCandidate(blobs []*eth.Blob) (*txmgr.TxCandidate, error) {
+	var ids []da.ID
+	for _, blob := range blobs {
+		data, err := blob.ToData()
+		if err != nil {
+			return nil, err
+		}
+		l.Log.Info("Building Celestia transaction candidate", "size", len(data))
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Duration(l.RollupConfig.BlockTime)*time.Second)
+		ids, err = l.DAClient.Client.Submit(ctx, [][]byte{data}, l.DAClient.GasPrice, l.DAClient.Namespace)
+		cancel()
+		if err != nil {
+			return nil, err
+		}
+		if len(ids) != 1 {
+			return nil, fmt.Errorf("celestia: expected 1 id, got %d", len(ids))
+		}
+		l.Log.Info("celestia: blob successfully submitted", "id", hex.EncodeToString(ids[0]))
 	}
-	if len(ids) != 1 {
-		return nil, fmt.Errorf("celestia: expected 1 id, got %d", len(ids))
+	var idBlobs []*eth.Blob
+	for _, id := range ids {
+		blob := &eth.Blob{}
+		err := blob.FromData(append([]byte{celestia.DerivationVersionCelestia}, []byte(id)...))
+		if err != nil {
+			return nil, err
+		}
+		idBlobs = append(idBlobs, blob)
 	}
-	l.Log.Info("celestia: blob successfully submitted", "id", hex.EncodeToString(ids[0]))
-	data = append([]byte{celestia.DerivationVersionCelestia}, ids[0]...)
-	return l.calldataTxCandidate(data), nil
+	return &txmgr.TxCandidate{
+		To:    &l.RollupConfig.BatchInboxAddress,
+		Blobs: idBlobs,
+	}, nil
 }
 
 func (l *BatchSubmitter) handleReceipt(r txmgr.TxReceipt[txRef]) {

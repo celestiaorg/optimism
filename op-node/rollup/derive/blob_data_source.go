@@ -174,7 +174,15 @@ func fillBlobPointers(data []blobOrCalldata, blobs []*eth.Blob) error {
 		if blobs[blobIndex] == nil {
 			return fmt.Errorf("found a nil blob")
 		}
-		data[i].blob = blobs[blobIndex]
+		blobData, err := blobs[blobIndex].ToData()
+		if err != nil {
+			return err
+		}
+		blob, err := processTransactionData(blobData, log.New("blobIndex", blobIndex))
+		if err != nil {
+			return err
+		}
+		data[i].blob = (*eth.Blob)(blob)
 		blobIndex++
 	}
 	if blobIndex != len(blobs) {
