@@ -178,11 +178,20 @@ func fillBlobPointers(data []blobOrCalldata, blobs []*eth.Blob) error {
 		if err != nil {
 			return err
 		}
-		blob, err := processTransactionData(blobData, log.New("blobIndex", blobIndex))
+		blobBytes, err := processTransactionData(blobData, log.New("blobIndex", blobIndex))
 		if err != nil {
 			return err
 		}
-		data[i].blob = (*eth.Blob)(blob)
+		if blobBytes != nil {
+			blob := &eth.Blob{}
+			err := blob.FromData(blobBytes)
+			if err != nil {
+				return err
+			}
+			data[i].blob = blob
+		} else {
+			data[i].blob = &eth.Blob{}
+		}
 		blobIndex++
 	}
 	if blobIndex != len(blobs) {

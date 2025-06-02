@@ -1012,15 +1012,16 @@ func (l *BatchSubmitter) celestiaTxCandidate(blobs []*eth.Blob) (*txmgr.TxCandid
 		}
 		l.Log.Info("Building Celestia transaction candidate", "size", len(data))
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Duration(l.RollupConfig.BlockTime)*time.Second)
-		ids, err = l.DAClient.Client.Submit(ctx, [][]byte{data}, l.DAClient.GasPrice, l.DAClient.Namespace)
+		id, err := l.DAClient.Client.Submit(ctx, [][]byte{data}, l.DAClient.GasPrice, l.DAClient.Namespace)
 		cancel()
 		if err != nil {
 			return nil, err
 		}
-		if len(ids) != 1 {
-			return nil, fmt.Errorf("celestia: expected 1 id, got %d", len(ids))
+		if len(id) != 1 {
+			return nil, fmt.Errorf("celestia: expected 1 id, got %d", len(id))
 		}
-		l.Log.Info("celestia: blob successfully submitted", "id", hex.EncodeToString(ids[0]))
+		ids = append(ids, id[0])
+		l.Log.Info("celestia: blob successfully submitted", "id", hex.EncodeToString(id[0]))
 	}
 	var idBlobs []*eth.Blob
 	for _, id := range ids {
