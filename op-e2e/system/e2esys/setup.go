@@ -570,6 +570,14 @@ func WithBatcherCompressionAlgo(ca derive.CompressionAlgo) StartOption {
 	}
 }
 
+func WithBatcherCelestiaDisabled() StartOption {
+	return StartOption{
+		BatcherMod: func(cfg *bss.CLIConfig) {
+			cfg.DaConfig = celestia.CLIConfig{}
+		},
+	}
+}
+
 func WithBatcherThrottling(interval time.Duration, threshold, txSize, blockSize uint64) StartOption {
 	return StartOption{
 		BatcherMod: func(cfg *bss.CLIConfig) {

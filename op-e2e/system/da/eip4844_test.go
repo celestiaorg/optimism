@@ -45,17 +45,13 @@ func TestSystem4844E2E_Calldata(t *testing.T) {
 	testSystem4844E2E(t, false, batcherFlags.CalldataType)
 }
 
-// Celestia: We disabled this test because when Celestia is used, we always write to calldata.
-// TODO: re-enable this test after we add the ability to switch off Celestia.
-// func TestSystem4844E2E_SingleBlob(t *testing.T) {
-// 	testSystem4844E2E(t, false, batcherFlags.BlobsType)
-// }
+func TestSystem4844E2E_SingleBlob(t *testing.T) {
+	testSystem4844E2E(t, false, batcherFlags.BlobsType)
+}
 
-// Celestia: We disabled this test because when Celestia is used, we always write to calldata.
-// TODO: re-enable this test after we add the ability to switch off Celestia.
-// func TestSystem4844E2E_MultiBlob(t *testing.T) {
-// 	testSystem4844E2E(t, true, batcherFlags.BlobsType)
-// }
+func TestSystem4844E2E_MultiBlob(t *testing.T) {
+	testSystem4844E2E(t, true, batcherFlags.BlobsType)
+}
 
 func testSystem4844E2E(t *testing.T, multiBlob bool, daType batcherFlags.DataAvailabilityType) {
 	op_e2e.InitParallel(t)
@@ -101,7 +97,8 @@ func testSystem4844E2E(t *testing.T, multiBlob bool, daType batcherFlags.DataAva
 	}()
 
 	cfg.DisableProposer = true // disable L2 output submission for this test
-	sys, err := cfg.Start(t, action)
+
+	sys, err := cfg.Start(t, action, e2esys.WithBatcherCelestiaDisabled()) // disable Celestia for this test
 	require.NoError(t, err, "Error starting up system")
 
 	log := testlog.Logger(t, log.LevelInfo)
@@ -278,14 +275,8 @@ func TestBatcherAutoDA(t *testing.T) {
 	cfg.DisableProposer = true // disable L2 output submission for this test
 	cfg.DisableTxForwarder = true
 	cfg.DisableBatcher = true // disable batcher because we start it manually later
-	sys, err := cfg.Start(t)
 
-	if sys.BatchSubmitter.DAClient != nil {
-		// Celestia: We disabled this test because when Celestia is used, we always write to calldata.
-		// TODO: re-enable this test after we add the ability to switch off Celestia.
-		log.Info("skipping TestBatcherAutoDA")
-		return
-	}
+	sys, err := cfg.Start(t, e2esys.WithBatcherCelestiaDisabled()) // disable Celestia for this test
 
 	require.NoError(t, err, "Error starting up system")
 	log := testlog.Logger(t, log.LevelInfo)
