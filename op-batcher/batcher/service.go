@@ -37,6 +37,10 @@ type BatcherConfig struct {
 	PollInterval           time.Duration
 	MaxPendingTransactions uint64
 
+	// If UseCelestiaDA is true, the batcher will post inputs to Celestia.
+	// Note: UseAltDA has higher precedence - if UseAltDA is true,
+	// then this flag is ignored, and AltDA will be used instead.
+	UseCelestiaDA bool
 	// UseAltDA is true if the rollup config has a DA challenge address so the batcher
 	// will post inputs to the DA server and post commitments to blobs or calldata.
 	UseAltDA bool
@@ -411,11 +415,18 @@ func (bs *BatcherService) initAltDA(cfg *CLIConfig) error {
 }
 
 func (bs *BatcherService) initDA(cfg *CLIConfig) error {
+	if !cfg.DaConfig.Enabled {
+		bs.UseCelestiaDA = false
+		bs.DAClient = nil
+		return nil
+	}
+
 	client, err := celestia.NewDAClient(cfg.DaConfig.Rpc, cfg.DaConfig.AuthToken, cfg.DaConfig.Namespace, cfg.DaConfig.FallbackMode, cfg.DaConfig.GasPrice)
 	if err != nil {
 		return err
 	}
 	bs.DAClient = client
+	bs.UseCelestiaDA = true
 	return nil
 }
 
