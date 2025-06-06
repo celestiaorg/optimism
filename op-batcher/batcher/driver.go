@@ -117,7 +117,7 @@ type BatchSubmitter struct {
 	channelMgrMutex sync.Mutex // guards channelMgr and prevCurrentL1
 	channelMgr      *channelManager
 	prevCurrentL1   eth.L1BlockRef // cached CurrentL1 from the last syncStatus
-	blockRange      [2]*big.Int
+	blockRange      [2]uint64
 }
 
 // NewBatchSubmitter initializes the BatchSubmitter driver from a preconfigured DriverSetup
@@ -777,7 +777,7 @@ func (l *BatchSubmitter) publishTxToL1(ctx context.Context, queue *txmgr.Queue[t
 	}
 
 	size := len(l.channelMgr.blocks)
-	l.blockRange = [2]*big.Int{l.channelMgr.blocks[0].Number(), l.channelMgr.blocks[size-1].Number()}
+	l.blockRange = [2]uint64{l.channelMgr.blocks[0].NumberU64(), l.channelMgr.blocks[size-1].NumberU64()}
 
 	if err = l.sendTransaction(txdata, queue, receiptsCh, daGroup, isPectra); err != nil {
 		return fmt.Errorf("BatchSubmitter.sendTransaction failed: %w", err)

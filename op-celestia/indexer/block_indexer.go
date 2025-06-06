@@ -2,7 +2,7 @@ package indexer
 
 import (
 	"database/sql"
-	"math/big"
+	"fmt"
 	"time"
 
 	celestia "github.com/ethereum-optimism/optimism/op-celestia"
@@ -44,11 +44,12 @@ func (idx *BlockIndexer) createTables() error {
 	return err
 }
 
-func (idx *BlockIndexer) StoreMapping(l2Start, l2End *big.Int, celestiaHeight uint64, commitment []byte) {
+func (idx *BlockIndexer) StoreMapping(l2Start, l2End, celestiaHeight uint64, commitment []byte) {
 	query := `INSERT OR REPLACE INTO l2_celestia_mapping
 		(l2_block_start, l2_block_end, celestia_height, celestia_commitment, created_at)
 		VALUES (?, ?, ?, ?, ?)`
-	idx.db.Exec(query, l2Start, l2End, celestiaHeight, commitment, time.Now().Unix())
+	res, err := idx.db.Exec(query, l2Start, l2End, celestiaHeight, commitment, time.Now().Unix())
+	fmt.Println("res", res, "err", err)
 }
 
 func (idx *BlockIndexer) GetCelestiaLocation(l2Block uint64) (*celestia.CelestiaLocation, error) {
@@ -57,8 +58,7 @@ func (idx *BlockIndexer) GetCelestiaLocation(l2Block uint64) (*celestia.Celestia
 		WHERE l2_block_start <= ? AND l2_block_end >= ?
 		LIMIT 1`
 
-		var height uint64
-		var start, end *big.Int
+	var start, end, height uint64
 	var commitment []byte
 
 	err := idx.db.QueryRow(query, l2Block, l2Block).Scan(&start, &end, &height, &commitment)
@@ -69,10 +69,10 @@ func (idx *BlockIndexer) GetCelestiaLocation(l2Block uint64) (*celestia.Celestia
 	return &celestia.CelestiaLocation{
 		Height:     height,
 		Commitment: commitment,
-		L2Range:    struct {
-				Start *big.Int `json:"start"`
-				End   *big.Int `json:"end"`
-			}{Start: start, End: end},
+		L2Range: struct {
+			Start uint64 `json:"start"`
+			End   uint64 `json:"end"`
+		}{Start: start, End: end},
 	}, nil
 }
 

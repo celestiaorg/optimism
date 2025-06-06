@@ -3,7 +3,6 @@ package celestia
 import (
 	"encoding/hex"
 	"fmt"
-	"math/big"
 	"time"
 
 	"github.com/rollkit/go-da"
@@ -19,7 +18,8 @@ type DAClient struct {
 	Indexer      BlockIndexer
 }
 
-func (dac *DAClient) IndexMapping(l2Range [2]*big.Int, celestiaHeight uint64, commitment []byte) {
+func (dac *DAClient) IndexMapping(l2Range [2]uint64, celestiaHeight uint64, commitment []byte) {
+	fmt.Println("dac.Indexer", dac.Indexer)
 	if dac.Indexer != nil {
 		dac.Indexer.StoreMapping(l2Range[0], l2Range[1], celestiaHeight, commitment)
 	}
