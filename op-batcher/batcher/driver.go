@@ -765,7 +765,9 @@ func (l *BatchSubmitter) publishTxToL1(ctx context.Context, queue *txmgr.Queue[t
 	// Collect next transaction data. This pulls data out of the channel, so we need to make sure
 	// to put it back if ever da or txmgr requests fail, by calling l.recordFailedDARequest/recordFailedTx.
 	l.channelMgrMutex.Lock()
+	rangeStart := l.channelMgr.blockCursor
 	txdata, err := l.channelMgr.TxData(l1tip.ID(), isPectra)
+	rangeEnd := l.channelMgr.blockCursor
 	l.channelMgrMutex.Unlock()
 
 	if err == io.EOF {
@@ -776,8 +778,11 @@ func (l *BatchSubmitter) publishTxToL1(ctx context.Context, queue *txmgr.Queue[t
 		return err
 	}
 
-	size := len(l.channelMgr.blocks)
-	l.blockRange = [2]uint64{l.channelMgr.blocks[0].NumberU64(), l.channelMgr.blocks[size-1].NumberU64()}
+	blocksLen := l.channelMgr.blocks.Len()
+	if rangeEnd == blocksLen {
+		rangeEnd = blocksLen - 1
+	}
+	l.blockRange = [2]uint64{l.channelMgr.blocks[rangeStart].NumberU64(), l.channelMgr.blocks[rangeEnd].NumberU64()}
 
 	if err = l.sendTransaction(txdata, queue, receiptsCh, daGroup, isPectra); err != nil {
 		return fmt.Errorf("BatchSubmitter.sendTransaction failed: %w", err)
@@ -978,6 +983,7 @@ func (l *BatchSubmitter) celestiaTxCandidate(data []byte) (*txmgr.TxCandidate, e
 	data = append([]byte{celestia.DerivationVersionCelestia}, ids[0]...)
 	height := binary.LittleEndian.Uint64(ids[0][:8])
 	l.DAClient.IndexMapping(l.blockRange, height, ids[0])
+	l.Log.Info("celestia: mapping index", "blockRange", l.blockRange, "height", height)
 	return l.calldataTxCandidate(data), nil
 }
 
