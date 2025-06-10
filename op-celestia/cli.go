@@ -40,7 +40,7 @@ const (
 	NamespaceSize = 58
 
 	// defaultRPC is the default rpc dial address
-	defaultRPC = "grpc://localhost:26650"
+	defaultRPC = "http://localhost:26658"
 
 	// defaultGasPrice is the default gas price
 	defaultGasPrice = -1
