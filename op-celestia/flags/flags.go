@@ -61,6 +61,12 @@ var (
 		Value:   10 * time.Second,
 		EnvVars: prefixEnvVars("NETWORK_TIMEOUT"),
 	}
+	VerifyParentCheckFlag = &cli.BoolFlag{
+		Name:    "verify-parent-check",
+		Usage:   "Verify parent check for span batches",
+		Value:   true,
+		EnvVars: prefixEnvVars("VERIFY_PARENT_CHECK"),
+	}
 	// Additional flags for precise batch parsing
 	L2BlockTimeFlag = &cli.Uint64Flag{
 		Name:    "l2-block-time",

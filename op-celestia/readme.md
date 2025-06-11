@@ -21,7 +21,7 @@ Celestia locations, and provides an RPC API to query L2 block locations.
 
 ### Required Flags
 - `--start-l1-block`: Starting L1 block number for indexing
-- `--batch-inbox-address`: Address of the batch inbox contract  
+- `--batch-inbox-address`: Address of the batch inbox contract
 - `--l1-eth-rpc`: HTTP provider URL for L1 Ethereum
 - `--l2-eth-rpc`: HTTP provider URL for L2 Ethereum
 - `--op-node-rpc`: HTTP provider URL for op-node (for verification)
@@ -30,6 +30,7 @@ Celestia locations, and provides an RPC API to query L2 block locations.
 - `--enable-admin`: Enable admin API (default: false)
 - `--poll-interval`: Polling interval for new blocks (default: 12s)
 - `--network-timeout`: Timeout for network requests (default: 10s)
+- `--verify-parent-check`: Enable parent check verification in span batches (default: true)
 
 ### Celestia DA Flags
 - `--da.rpc`: Celestia DA client RPC endpoint
@@ -59,7 +60,7 @@ curl -X POST -H "Content-Type: application/json" -s \
 Response:
 ```json
 {
-  "jsonrpc": "2.0", 
+  "jsonrpc": "2.0",
   "id": 1,
   "result": {
     "height": 353,

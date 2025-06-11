@@ -128,7 +128,7 @@ func (s *Storage) String() string {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	state := map[string]interface{}{
+	state := map[string]any{
 		"last_indexed_block": s.lastIndexedBlock,
 		"indexed_blocks":     len(s.l2BlockToLocation),
 		"unique_locations":   len(s.commitmentToLocation),

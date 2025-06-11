@@ -45,6 +45,9 @@ type CLIConfig struct {
 	// NetworkTimeout is the timeout for network requests
 	NetworkTimeout time.Duration
 
+	// VerifyParentCheck is a flag to enable parent check verification in span batches
+	VerifyParentCheck bool
+
 	// Celestia DA configuration
 	CelestiaConfig celestia.CLIConfig
 
@@ -116,6 +119,7 @@ type IndexerConfig struct {
 	OpNodeRpc         string
 	PollInterval      time.Duration
 	NetworkTimeout    time.Duration
+	VerifyParentCheck bool
 	CelestiaConfig    celestia.CLIConfig
 
 	// Additional fields needed for precise batch parsing
@@ -134,6 +138,7 @@ func NewConfig(ctx *cli.Context) *CLIConfig {
 		OpNodeRpc:         ctx.String(flags.OpNodeRpcFlag.Name),
 		PollInterval:      ctx.Duration(flags.PollIntervalFlag.Name),
 		NetworkTimeout:    ctx.Duration(flags.NetworkTimeoutFlag.Name),
+		VerifyParentCheck: ctx.Bool(flags.VerifyParentCheckFlag.Name),
 		CelestiaConfig:    celestia.ReadCLIConfig(ctx),
 		RPCConfig:         oprpc.ReadCLIConfig(ctx),
 		LogConfig:         oplog.ReadCLIConfig(ctx),

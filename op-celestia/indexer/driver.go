@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -262,7 +263,7 @@ func (d *IndexerDriver) processBatchTransaction(tx *types.Transaction) error {
 		return fmt.Errorf("invalid Celestia reference data length: %d", len(data))
 	}
 
-	height, commitmentBytes := SplitID(data)
+	height, commitmentBytes := SplitID(data[1:])
 	commitment := base64.StdEncoding.EncodeToString(commitmentBytes)
 
 	d.Log.Debug("Found Celestia reference", "height", height, "commitment", commitment, "tx", tx.Hash())
@@ -334,7 +335,7 @@ func (d *IndexerDriver) extractL2Range(frames []derive.Frame) (*L2Range, error) 
 		return nil, fmt.Errorf("no frames provided")
 	}
 
-	var l2Blocks []*eth.BlockRef
+	var l2Blocks []uint64
 
 	// Parse each frame to extract batch data and determine L2 block numbers
 	for frameIndex, frame := range frames {
@@ -383,8 +384,10 @@ func (d *IndexerDriver) extractL2Range(frames []derive.Frame) (*L2Range, error) 
 							"err", err)
 						continue
 					}
-					d.currentBlock.Store(l2Block.Number + 1)
-					l2Blocks = append(l2Blocks, &l2Block)
+					// currentBlock is the next block number after the parent block
+					currentBlock := l2Block.Number + 1
+					l2Blocks = append(l2Blocks, currentBlock)
+					d.currentBlock.Store(currentBlock)
 				} else {
 					d.Log.Warn("Got nil singular batch",
 						"frame_index", frameIndex,
@@ -411,26 +414,26 @@ func (d *IndexerDriver) extractL2Range(frames []derive.Frame) (*L2Range, error) 
 					continue
 				}
 				if spanBatch != nil {
-					startBlock := d.currentBlock.Add(1)
 					for batchIndex := range spanBatch.Batches {
-						l2Block, err := d.L2Client.BlockRefByNumber(context.Background(), startBlock+uint64(batchIndex))
-						if err != nil {
-							d.Log.Warn("Error getting L2 block by hash",
-								"frame_index", frameIndex,
-								"channel_id", frame.ID.String(),
-								"err", err)
-							continue
-						}
-						if batchIndex == 0 {
-							if bytes.Equal(l2Block.Hash[:20], spanBatch.ParentCheck[:]) {
+						currentBlock := d.currentBlock.Add(uint64(batchIndex)+1)
+						if batchIndex == 0 && d.Cfg.VerifyParentCheck {
+							l2Block, err := d.L2Client.BlockRefByNumber(context.Background(), currentBlock)
+							if err != nil {
+								d.Log.Warn("Error getting L2 block by hash",
+									"frame_index", frameIndex,
+									"channel_id", frame.ID.String(),
+									"err", err)
+								continue
+							}
+							if !bytes.Equal(l2Block.Hash[:20], spanBatch.ParentCheck[:]) {
 								d.Log.Warn("Parent check mismatch",
 									"frame_index", frameIndex,
 									"channel_id", frame.ID.String(),
 									"l2_block", l2Block.Hash.String())
 							}
 						}
-						d.currentBlock.Store(l2Block.Number + 1)
-						l2Blocks = append(l2Blocks, &l2Block)
+						l2Blocks = append(l2Blocks, currentBlock)
+						d.currentBlock.Store(currentBlock)
 					}
 				} else {
 					d.Log.Warn("Got nil span batch",
@@ -448,9 +451,12 @@ func (d *IndexerDriver) extractL2Range(frames []derive.Frame) (*L2Range, error) 
 		}
 	}
 
+	// pre-holocene batches may be out of order
+	slices.Sort(l2Blocks)
+
 	l2Range := &L2Range{
-		Start: l2Blocks[0].Number,
-		End:   l2Blocks[len(l2Blocks)-1].Number,
+		Start: l2Blocks[0],
+		End:   l2Blocks[len(l2Blocks)-1],
 	}
 
 	d.Log.Debug("Extracted L2 range from frames",

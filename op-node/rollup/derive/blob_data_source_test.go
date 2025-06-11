@@ -103,7 +103,7 @@ func TestDataAndHashesFromTxs(t *testing.T) {
 	setCodeTx, err := types.SignNewTx(privateKey, signer, setCodeTxData)
 	require.NoError(t, err)
 	txs = types.Transactions{setCodeTx}
-	data, blobHashes = dataAndHashesFromTxs(txs, &config, batcherAddr, logger)
+	data, blobHashes, err = dataAndHashesFromTxs(txs, &config, batcherAddr, logger)
 	require.Equal(t, 0, len(data))
 	require.Equal(t, 0, len(blobHashes))
 }
