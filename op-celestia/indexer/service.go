@@ -9,6 +9,7 @@ import (
 	celestia "github.com/ethereum-optimism/optimism/op-celestia"
 	"github.com/ethereum-optimism/optimism/op-celestia/flags"
 	"github.com/ethereum-optimism/optimism/op-celestia/indexer/rpc"
+	"github.com/ethereum-optimism/optimism/op-celestia/indexer/store"
 	"github.com/ethereum-optimism/optimism/op-celestia/metrics"
 	opservice "github.com/ethereum-optimism/optimism/op-service"
 	"github.com/ethereum-optimism/optimism/op-service/cliapp"
@@ -40,7 +41,7 @@ type IndexerService struct {
 	L2Client       *sources.L2Client
 	OpNodeClient   dial.RollupClientInterface // optional
 	CelestiaClient *celestia.DAClient
-	Storage        *Storage
+	Store          store.Store
 
 	driver *IndexerDriver
 
@@ -72,7 +73,7 @@ func (is *IndexerService) initFromCLIConfig(ctx context.Context, version string,
 	if err := is.initClients(ctx, cfg); err != nil {
 		return err
 	}
-	if err := is.initStorage(); err != nil {
+	if err := is.initStore(cfg); err != nil {
 		return err
 	}
 	if err := is.initMetricsServer(cfg); err != nil {
@@ -164,8 +165,16 @@ func (is *IndexerService) initClients(ctx context.Context, cfg *CLIConfig) error
 	return nil
 }
 
-func (is *IndexerService) initStorage() error {
-	is.Storage = NewStorage()
+func (is *IndexerService) initStore(cfg *CLIConfig) error {
+	if cfg.DbPath == "" {
+		is.Store = store.NewMemoryStore()
+		return nil
+	}
+	sqliteStore, err := store.NewSqliteStore(cfg.DbPath)
+	if err != nil {
+		return fmt.Errorf("failed to create sqlite store: %w", err)
+	}
+	is.Store = sqliteStore
 	return nil
 }
 
@@ -219,7 +228,7 @@ func (is *IndexerService) initDriver() error {
 		L2Client:       is.L2Client,
 		OpNodeClient:   opNodeClient,
 		CelestiaClient: is.CelestiaClient,
-		Storage:        is.Storage,
+		Store:          is.Store,
 	})
 
 	is.driver = driver

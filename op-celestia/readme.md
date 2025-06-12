@@ -31,6 +31,7 @@ Celestia locations, and provides an RPC API to query L2 block locations.
 - `--poll-interval`: Polling interval for new blocks (default: 12s)
 - `--network-timeout`: Timeout for network requests (default: 10s)
 - `--verify-parent-check`: Enable parent check verification in span batches (default: true)
+- `--db-path`: Path to the SQLite database (default: in memory)
 
 ### Celestia DA Flags
 - `--da.rpc`: Celestia DA client RPC endpoint
@@ -95,6 +96,7 @@ op-celestia-indexer \
   --l2-eth-rpc http://127.0.0.1:54314 \
   --op-node-rpc http://127.0.0.1:54328 \
   --rpc.enable-admin \
+  --db-path indexer.db \
   --log.level debug \
   --da.rpc http://127.0.0.1:54300 \
   --da.namespace 00000000000000000000000000000000000000000008e5f679bf7116cb  \

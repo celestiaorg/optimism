@@ -67,6 +67,12 @@ var (
 		Value:   true,
 		EnvVars: prefixEnvVars("VERIFY_PARENT_CHECK"),
 	}
+	DbPathFlag = &cli.StringFlag{
+		Name:    "db-path",
+		Usage:   "Path to SQLite database",
+		Value:   "",
+		EnvVars: prefixEnvVars("DB_PATH"),
+	}
 	// Additional flags for precise batch parsing
 	L2BlockTimeFlag = &cli.Uint64Flag{
 		Name:    "l2-block-time",
@@ -98,6 +104,8 @@ var requiredFlags = []cli.Flag{
 var optionalFlags = []cli.Flag{
 	PollIntervalFlag,
 	NetworkTimeoutFlag,
+	VerifyParentCheckFlag,
+	DbPathFlag,
 	L2BlockTimeFlag,
 	L2GenesisTimeFlag,
 	L2ChainIDFlag,

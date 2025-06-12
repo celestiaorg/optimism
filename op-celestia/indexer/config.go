@@ -48,6 +48,9 @@ type CLIConfig struct {
 	// VerifyParentCheck is a flag to enable parent check verification in span batches
 	VerifyParentCheck bool
 
+	// DbPath is the path to the SQLite database
+	DbPath string
+
 	// Celestia DA configuration
 	CelestiaConfig celestia.CLIConfig
 
@@ -120,6 +123,7 @@ type IndexerConfig struct {
 	PollInterval      time.Duration
 	NetworkTimeout    time.Duration
 	VerifyParentCheck bool
+	SqlitePath        string
 	CelestiaConfig    celestia.CLIConfig
 
 	// Additional fields needed for precise batch parsing
@@ -139,6 +143,7 @@ func NewConfig(ctx *cli.Context) *CLIConfig {
 		PollInterval:      ctx.Duration(flags.PollIntervalFlag.Name),
 		NetworkTimeout:    ctx.Duration(flags.NetworkTimeoutFlag.Name),
 		VerifyParentCheck: ctx.Bool(flags.VerifyParentCheckFlag.Name),
+		DbPath:            ctx.String(flags.DbPathFlag.Name),
 		CelestiaConfig:    celestia.ReadCLIConfig(ctx),
 		RPCConfig:         oprpc.ReadCLIConfig(ctx),
 		LogConfig:         oplog.ReadCLIConfig(ctx),

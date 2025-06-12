@@ -15,6 +15,7 @@ import (
 	"time"
 
 	celestia "github.com/ethereum-optimism/optimism/op-celestia"
+	"github.com/ethereum-optimism/optimism/op-celestia/indexer/store"
 	"github.com/ethereum-optimism/optimism/op-celestia/metrics"
 	"github.com/ethereum-optimism/optimism/op-node/rollup/derive"
 	"github.com/ethereum-optimism/optimism/op-service/eth"
@@ -64,7 +65,7 @@ type DriverSetup struct {
 	L2Client       *sources.L2Client
 	OpNodeClient   OpNodeClient // optional, for verification
 	CelestiaClient *celestia.DAClient
-	Storage        *Storage
+	Store          store.Store
 }
 
 // IndexerDriver is responsible for indexing L2 block locations on Celestia
@@ -127,12 +128,8 @@ func (d *IndexerDriver) Stop() error {
 }
 
 // GetLocation returns the Celestia location for a given L2 block number
-func (d *IndexerDriver) GetLocation(l2BlockNum uint64) (*CelestiaLocation, error) {
-	location, exists := d.Storage.GetLocation(l2BlockNum)
-	if !exists {
-		return nil, fmt.Errorf("%w: L2 block %d", ErrBlockNotFound, l2BlockNum)
-	}
-	return location, nil
+func (d *IndexerDriver) GetLocation(l2BlockNum uint64) (*store.CelestiaLocation, error) {
+	return d.Store.GetLocation(l2BlockNum)
 }
 
 // indexingLoop is the main loop that performs indexing operations
@@ -164,7 +161,10 @@ func (d *IndexerDriver) indexingLoop() {
 func (d *IndexerDriver) catchUp() error {
 	d.Log.Info("Starting catch-up indexing")
 
-	lastIndexed := d.Storage.GetLastIndexedBlock()
+	lastIndexed, err := d.Store.GetLastIndexedBlock()
+	if err != nil {
+		return fmt.Errorf("failed to get last indexed block: %w", err)
+	}
 	startBlock := d.Cfg.StartL1Block
 
 	if lastIndexed > 0 {
@@ -186,7 +186,11 @@ func (d *IndexerDriver) catchUp() error {
 
 // indexNewBlocks indexes newly available blocks
 func (d *IndexerDriver) indexNewBlocks() error {
-	lastIndexed := d.Storage.GetLastIndexedBlock()
+	lastIndexed, err := d.Store.GetLastIndexedBlock()
+	if err != nil {
+		return fmt.Errorf("failed to get last indexed block: %w", err)
+	}
+
 	currentL1Head, err := d.getCurrentL1Head()
 	if err != nil {
 		return fmt.Errorf("failed to get current L1 head: %w", err)
@@ -216,7 +220,7 @@ func (d *IndexerDriver) indexBlockRange(startBlock, endBlock uint64) error {
 			continue
 		}
 
-		d.Storage.SetLastIndexedBlock(blockNum)
+		d.Store.SetLastIndexedBlock(blockNum)
 		d.Metr.RecordIndexedBlock(blockNum)
 	}
 
@@ -304,13 +308,13 @@ func (d *IndexerDriver) processCelestiaFrames(ids []byte, height uint64, commitm
 	}
 
 	// Store the location
-	location := &CelestiaLocation{
+	location := &store.CelestiaLocation{
 		Height:     height,
 		Commitment: commitment,
 		L2Range:    *l2Range,
 	}
 
-	d.Storage.StoreLocation(location)
+	d.Store.StoreLocation(location)
 	d.Metr.RecordLocationStored(location.L2Range.Start, location.L2Range.End)
 
 	d.Log.Info("Stored Celestia location",
@@ -330,7 +334,7 @@ func (d *IndexerDriver) processCelestiaFrames(ids []byte, height uint64, commitm
 }
 
 // extractL2Range extracts the L2 block range from parsed frames by actually parsing batch data
-func (d *IndexerDriver) extractL2Range(frames []derive.Frame) (*L2Range, error) {
+func (d *IndexerDriver) extractL2Range(frames []derive.Frame) (*store.L2Range, error) {
 	if len(frames) == 0 {
 		return nil, fmt.Errorf("no frames provided")
 	}
@@ -415,7 +419,7 @@ func (d *IndexerDriver) extractL2Range(frames []derive.Frame) (*L2Range, error) 
 				}
 				if spanBatch != nil {
 					for batchIndex := range spanBatch.Batches {
-						currentBlock := d.currentBlock.Add(uint64(batchIndex)+1)
+						currentBlock := d.currentBlock.Add(uint64(batchIndex) + 1)
 						if batchIndex == 0 && d.Cfg.VerifyParentCheck {
 							l2Block, err := d.L2Client.BlockRefByNumber(context.Background(), currentBlock)
 							if err != nil {
@@ -454,7 +458,7 @@ func (d *IndexerDriver) extractL2Range(frames []derive.Frame) (*L2Range, error) 
 	// pre-holocene batches may be out of order
 	slices.Sort(l2Blocks)
 
-	l2Range := &L2Range{
+	l2Range := &store.L2Range{
 		Start: l2Blocks[0],
 		End:   l2Blocks[len(l2Blocks)-1],
 	}

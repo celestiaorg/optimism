@@ -1,4 +1,4 @@
-package indexer
+package store
 
 import (
 	"encoding/json"
@@ -6,21 +6,8 @@ import (
 	"sync"
 )
 
-// CelestiaLocation represents the location of L2 blocks on Celestia
-type CelestiaLocation struct {
-	Height     uint64  `json:"height"`
-	Commitment string  `json:"commitment"`
-	L2Range    L2Range `json:"l2_range"`
-}
-
-// L2Range represents a range of L2 block numbers
-type L2Range struct {
-	Start uint64 `json:"start"`
-	End   uint64 `json:"end"`
-}
-
-// Storage provides thread-safe storage for L2 block -> Celestia location mapping
-type Storage struct {
+// MemoryStore provides thread-safe storage for L2 block -> Celestia location mapping
+type MemoryStore struct {
 	mu sync.RWMutex
 
 	// l2BlockToLocation maps L2 block number to its Celestia location
@@ -33,9 +20,11 @@ type Storage struct {
 	commitmentToLocation map[string]*CelestiaLocation
 }
 
-// NewStorage creates a new Storage instance
-func NewStorage() *Storage {
-	return &Storage{
+var _ Store = (*MemoryStore)(nil)
+
+// NewMemoryStore creates a new in-memory store
+func NewMemoryStore() *MemoryStore {
+	return &MemoryStore{
 		l2BlockToLocation:    make(map[uint64]*CelestiaLocation),
 		commitmentToLocation: make(map[string]*CelestiaLocation),
 		lastIndexedBlock:     0,
@@ -43,21 +32,22 @@ func NewStorage() *Storage {
 }
 
 // SetLastIndexedBlock sets the last indexed L2 block number
-func (s *Storage) SetLastIndexedBlock(blockNum uint64) {
+func (s *MemoryStore) SetLastIndexedBlock(blockNum uint64) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.lastIndexedBlock = blockNum
+	return nil
 }
 
 // GetLastIndexedBlock returns the last indexed L2 block number
-func (s *Storage) GetLastIndexedBlock() uint64 {
+func (s *MemoryStore) GetLastIndexedBlock() (uint64, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return s.lastIndexedBlock
+	return s.lastIndexedBlock, nil
 }
 
 // StoreLocation stores the Celestia location for a range of L2 blocks
-func (s *Storage) StoreLocation(location *CelestiaLocation) {
+func (s *MemoryStore) StoreLocation(location *CelestiaLocation) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -68,35 +58,42 @@ func (s *Storage) StoreLocation(location *CelestiaLocation) {
 
 	// Store commitment mapping
 	s.commitmentToLocation[location.Commitment] = location
+	return nil
 }
 
 // GetLocation returns the Celestia location for a given L2 block number
-func (s *Storage) GetLocation(l2BlockNum uint64) (*CelestiaLocation, bool) {
+func (s *MemoryStore) GetLocation(l2BlockNum uint64) (*CelestiaLocation, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	location, exists := s.l2BlockToLocation[l2BlockNum]
-	return location, exists
+	if !exists {
+		return nil, fmt.Errorf("location not found for block %d", l2BlockNum)
+	}
+	return location, nil
 }
 
 // GetLocationByCommitment returns the Celestia location for a given commitment
-func (s *Storage) GetLocationByCommitment(commitment string) (*CelestiaLocation, bool) {
+func (s *MemoryStore) GetLocationByCommitment(commitment string) (*CelestiaLocation, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	location, exists := s.commitmentToLocation[commitment]
-	return location, exists
+	if !exists {
+		return nil, fmt.Errorf("location not found for commitment %s", commitment)
+	}
+	return location, nil
 }
 
 // GetIndexedBlockCount returns the number of indexed L2 blocks
-func (s *Storage) GetIndexedBlockCount() int {
+func (s *MemoryStore) GetIndexedBlockCount() (int, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	return len(s.l2BlockToLocation)
+	return len(s.l2BlockToLocation), nil
 }
 
 // GetAllLocations returns all stored locations (useful for debugging/admin)
-func (s *Storage) GetAllLocations() []*CelestiaLocation {
+func (s *MemoryStore) GetAllLocations() ([]*CelestiaLocation, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -110,21 +107,22 @@ func (s *Storage) GetAllLocations() []*CelestiaLocation {
 		}
 	}
 
-	return locations
+	return locations, nil
 }
 
 // Clear removes all stored data (useful for testing)
-func (s *Storage) Clear() {
+func (s *MemoryStore) Clear() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	s.l2BlockToLocation = make(map[uint64]*CelestiaLocation)
 	s.commitmentToLocation = make(map[string]*CelestiaLocation)
 	s.lastIndexedBlock = 0
+	return nil
 }
 
 // String returns a JSON representation of the storage state (for debugging)
-func (s *Storage) String() string {
+func (s *MemoryStore) String() string {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
