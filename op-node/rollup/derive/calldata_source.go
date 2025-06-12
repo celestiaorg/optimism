@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 
+	libshare "github.com/celestiaorg/go-square/v2/share"
 	celestia "github.com/ethereum-optimism/optimism/op-celestia"
 	"github.com/ethereum-optimism/optimism/op-service/eth"
 )
@@ -116,19 +117,21 @@ func DataFromEVMTransactions(dsCfg DataSourceConfig, batcherAddr common.Address,
 				case celestia.DerivationVersionCelestia:
 					log.Info("celestia: blob request", "id", hex.EncodeToString(tx.Data()))
 					ctx, cancel := context.WithTimeout(context.Background(), daClient.GetTimeout)
-					blobs, err := daClient.Client.Get(ctx, [][]byte{data[1:]}, daClient.Namespace)
-					cancel()
+					defer cancel()
+					height, commitment := celestia.SplitID(data[1:])
+					namespace, err := libshare.NewNamespaceFromBytes(daClient.Namespace)
+					if err != nil {
+						return nil, err
+					}
+					blob, err := daClient.Client.Blob.Get(ctx, height, namespace, commitment)
 					if err != nil {
 						return nil, NewResetError(fmt.Errorf("celestia: failed to resolve frame: %w", err))
 					}
-					if len(blobs) != 1 {
-						log.Warn("celestia: unexpected length for blobs", "expected", 1, "got", len(blobs))
-						if len(blobs) == 0 {
-							log.Warn("celestia: skipping empty blobs")
-							continue
-						}
+					if blob == nil {
+						log.Warn("celestia: skipping empty blobs")
+						continue
 					}
-					out = append(out, blobs[0])
+					out = append(out, blob.Data())
 				default:
 					out = append(out, data)
 					log.Info("celestia: using eth fallback")

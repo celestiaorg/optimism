@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -14,6 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	libshare "github.com/celestiaorg/go-square/v2/share"
 	celestia "github.com/ethereum-optimism/optimism/op-celestia"
 	"github.com/ethereum-optimism/optimism/op-celestia/indexer/store"
 	"github.com/ethereum-optimism/optimism/op-celestia/metrics"
@@ -29,19 +29,6 @@ var (
 	ErrIndexerNotRunning = errors.New("indexer is not running")
 	ErrBlockNotFound     = errors.New("L2 block not found in index")
 )
-
-// heightLen is a length (in bytes) of serialized height.
-//
-// This is 8 as uint64 consist of 8 bytes.
-const heightLen = 8
-
-func SplitID(id []byte) (uint64, []byte) {
-	if len(id) <= heightLen {
-		return 0, nil
-	}
-	commitment := id[heightLen:]
-	return binary.LittleEndian.Uint64(id[:heightLen]), commitment
-}
 
 // L1Client interface for L1 operations
 type L1Client interface {
@@ -267,31 +254,30 @@ func (d *IndexerDriver) processBatchTransaction(tx *types.Transaction) error {
 		return fmt.Errorf("invalid Celestia reference data length: %d", len(data))
 	}
 
-	height, commitmentBytes := SplitID(data[1:])
-	commitment := base64.StdEncoding.EncodeToString(commitmentBytes)
-
-	d.Log.Debug("Found Celestia reference", "height", height, "commitment", commitment, "tx", tx.Hash())
-
 	// Fetch and parse frames from Celestia
-	return d.processCelestiaFrames(data[1:], height, commitment)
+	return d.processCelestiaFrames(data[1:])
 }
 
 // processCelestiaFrames fetches frames from Celestia and extracts L2 block ranges
-func (d *IndexerDriver) processCelestiaFrames(ids []byte, height uint64, commitment string) error {
+func (d *IndexerDriver) processCelestiaFrames(id []byte) error {
 	ctx, cancel := context.WithTimeout(d.ctx, d.Cfg.NetworkTimeout)
 	defer cancel()
 
-	blobs, err := d.CelestiaClient.Client.Get(ctx, [][]byte{ids}, d.CelestiaClient.Namespace)
+	height, commitment := celestia.SplitID(id)
+	namespace, err := libshare.NewNamespaceFromBytes(d.CelestiaClient.Namespace)
+	if err != nil {
+		return err
+	}
+
+	d.Log.Debug("Found Celestia reference", "height", height, "commitment", base64.StdEncoding.EncodeToString(commitment))
+
+	blob, err := d.CelestiaClient.Client.Blob.Get(ctx, height, namespace, commitment)
 	if err != nil {
 		return fmt.Errorf("failed to fetch blobs from Celestia: %w", err)
 	}
 
-	if len(blobs) == 0 {
-		return fmt.Errorf("no blobs returned from Celestia for commitment %s", commitment)
-	}
-
 	// Parse frames from blob data
-	frameData := blobs[0] // Assuming single blob per commitment
+	frameData := blob.Blob.Data()
 	frames, err := derive.ParseFrames(frameData)
 	if err != nil {
 		return fmt.Errorf("failed to parse frames: %w", err)
@@ -310,7 +296,7 @@ func (d *IndexerDriver) processCelestiaFrames(ids []byte, height uint64, commitm
 	// Store the location
 	location := &store.CelestiaLocation{
 		Height:     height,
-		Commitment: commitment,
+		Commitment: base64.StdEncoding.EncodeToString(commitment),
 		L2Range:    *l2Range,
 	}
 
@@ -319,7 +305,7 @@ func (d *IndexerDriver) processCelestiaFrames(ids []byte, height uint64, commitm
 
 	d.Log.Info("Stored Celestia location",
 		"height", height,
-		"commitment", commitment,
+		"commitment", base64.StdEncoding.EncodeToString(commitment),
 		"l2_start", l2Range.Start,
 		"l2_end", l2Range.End)
 

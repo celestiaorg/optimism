@@ -13,6 +13,8 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
+	"github.com/celestiaorg/celestia-node/blob"
+	"github.com/celestiaorg/celestia-node/state"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
@@ -21,6 +23,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
 
+	libshare "github.com/celestiaorg/go-square/v2/share"
 	altda "github.com/ethereum-optimism/optimism/op-alt-da"
 	"github.com/ethereum-optimism/optimism/op-batcher/metrics"
 	celestia "github.com/ethereum-optimism/optimism/op-celestia"
@@ -954,19 +957,39 @@ func (l *BatchSubmitter) calldataTxCandidate(data []byte) *txmgr.TxCandidate {
 	}
 }
 
+// blobsAndCommitments converts []da.Blob to []*blob.Blob and generates corresponding
+// []da.Commitment
+func blobsAndCommitments(
+	daBlob []byte, namespace []byte,
+) ([]*blob.Blob, []byte, error) {
+	blobs := make([]*blob.Blob, 1)
+	ns, err := libshare.NewNamespaceFromBytes(namespace)
+	if err != nil {
+		return nil, nil, err
+	}
+	b, err := blob.NewBlobV0(ns, daBlob)
+	if err != nil {
+		return nil, nil, err
+	}
+	blobs = append(blobs, b)
+
+	return blobs, b.Commitment, nil
+}
+
 func (l *BatchSubmitter) celestiaTxCandidate(data []byte) (*txmgr.TxCandidate, error) {
 	l.Log.Info("Building Celestia transaction candidate", "size", len(data))
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Duration(l.RollupConfig.BlockTime)*time.Second)
-	ids, err := l.DAClient.Client.Submit(ctx, [][]byte{data}, l.DAClient.GasPrice, l.DAClient.Namespace)
-	cancel()
+
+	blobs, commitment, err := blobsAndCommitments(data, l.DAClient.Namespace)
+	opts := state.NewTxConfig(state.WithGasPrice(l.DAClient.GasPrice))
+	height, err := l.DAClient.Client.Blob.Submit(ctx, blobs, opts)
+	defer cancel()
 	if err != nil {
 		return nil, err
 	}
-	if len(ids) != 1 {
-		return nil, fmt.Errorf("celestia: expected 1 id, got %d", len(ids))
-	}
-	l.Log.Info("celestia: blob successfully submitted", "id", hex.EncodeToString(ids[0]))
-	data = append([]byte{celestia.DerivationVersionCelestia}, ids[0]...)
+	id := celestia.MakeID(height, commitment)
+	l.Log.Info("celestia: blob successfully submitted", "id", hex.EncodeToString(id))
+	data = append([]byte{celestia.DerivationVersionCelestia}, id...)
 	return l.calldataTxCandidate(data), nil
 }
 
