@@ -355,6 +355,7 @@ func (da *driverAdapter) GetLocation(l2BlockNum uint64) (*rpc.CelestiaLocation, 
 			Start: location.L2Range.Start,
 			End:   location.L2Range.End,
 		},
+		L1Block: location.L1Block,
 	}, nil
 }
 

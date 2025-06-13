@@ -69,7 +69,8 @@ Response:
     "l2_range": {
       "start": 354,
       "end": 359
-    }
+    },
+    "l1_block": 12345
   }
 }
 ```

@@ -13,6 +13,7 @@ type CelestiaLocation struct {
 	Height     uint64  `json:"height"`
 	Commitment string  `json:"commitment"`
 	L2Range    L2Range `json:"l2_range"`
+	L1Block    uint64  `json:"l1_block"`
 }
 
 // L2Range represents a range of L2 block numbers
@@ -58,6 +59,7 @@ type GetCelestiaLocationResponse struct {
 	Height     uint64  `json:"height"`
 	Commitment string  `json:"commitment"`
 	L2Range    L2Range `json:"l2_range"`
+	L1Block    uint64  `json:"l1_block"`
 }
 
 // GetCelestiaLocation returns the Celestia location for a given L2 block number
@@ -79,7 +81,8 @@ type GetCelestiaLocationResponse struct {
 //	    "l2_range": {
 //	      "start": 354,
 //	      "end": 359
-//	    }
+//	    },
+//	    "l1_block": 12345
 //	  }
 //	}
 func (api *IndexerAPI) GetCelestiaLocation(ctx context.Context, l2BlockNumber uint64) (*GetCelestiaLocationResponse, error) {
@@ -102,6 +105,7 @@ func (api *IndexerAPI) GetCelestiaLocation(ctx context.Context, l2BlockNumber ui
 		Height:     location.Height,
 		Commitment: location.Commitment,
 		L2Range:    location.L2Range,
+		L1Block:    location.L1Block,
 	}
 
 	api.log.Debug("GetCelestiaLocation successful",
@@ -109,7 +113,8 @@ func (api *IndexerAPI) GetCelestiaLocation(ctx context.Context, l2BlockNumber ui
 		"height", response.Height,
 		"commitment", response.Commitment,
 		"l2_start", response.L2Range.Start,
-		"l2_end", response.L2Range.End)
+		"l2_end", response.L2Range.End,
+		"l1_block", response.L1Block)
 
 	return response, nil
 }

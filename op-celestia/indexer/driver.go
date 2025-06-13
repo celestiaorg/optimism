@@ -228,7 +228,7 @@ func (d *IndexerDriver) indexL1Block(blockNum uint64) error {
 	// Look for transactions to the batch inbox
 	for _, tx := range block.Transactions() {
 		if tx.To() != nil && *tx.To() == d.Cfg.BatchInboxAddress {
-			if err := d.processBatchTransaction(tx); err != nil {
+			if err := d.processBatchTransaction(tx, blockNum); err != nil {
 				d.Log.Warn("Failed to process batch transaction", "tx", tx.Hash(), "err", err)
 				// Continue processing other transactions
 			}
@@ -239,7 +239,7 @@ func (d *IndexerDriver) indexL1Block(blockNum uint64) error {
 }
 
 // processBatchTransaction processes a transaction to the batch inbox
-func (d *IndexerDriver) processBatchTransaction(tx *types.Transaction) error {
+func (d *IndexerDriver) processBatchTransaction(tx *types.Transaction, blockNum uint64) error {
 	data := tx.Data()
 	if len(data) == 0 {
 		return nil
@@ -255,11 +255,11 @@ func (d *IndexerDriver) processBatchTransaction(tx *types.Transaction) error {
 	}
 
 	// Fetch and parse frames from Celestia
-	return d.processCelestiaFrames(data[1:])
+	return d.processCelestiaFrames(data[1:], blockNum)
 }
 
 // processCelestiaFrames fetches frames from Celestia and extracts L2 block ranges
-func (d *IndexerDriver) processCelestiaFrames(id []byte) error {
+func (d *IndexerDriver) processCelestiaFrames(id []byte, blockNum uint64) error {
 	ctx, cancel := context.WithTimeout(d.ctx, d.Cfg.NetworkTimeout)
 	defer cancel()
 
@@ -298,16 +298,21 @@ func (d *IndexerDriver) processCelestiaFrames(id []byte) error {
 		Height:     height,
 		Commitment: base64.StdEncoding.EncodeToString(commitment),
 		L2Range:    *l2Range,
+		L1Block:    blockNum,
 	}
 
-	d.Store.StoreLocation(location)
+	err = d.Store.StoreLocation(location)
+	if err != nil {
+		return err
+	}
 	d.Metr.RecordLocationStored(location.L2Range.Start, location.L2Range.End)
 
 	d.Log.Info("Stored Celestia location",
 		"height", height,
 		"commitment", base64.StdEncoding.EncodeToString(commitment),
 		"l2_start", l2Range.Start,
-		"l2_end", l2Range.End)
+		"l2_end", l2Range.End,
+		"l1_block", blockNum)
 
 	// Optional verification against op-node
 	if d.OpNodeClient != nil {

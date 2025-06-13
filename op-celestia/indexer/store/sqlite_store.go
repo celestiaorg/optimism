@@ -60,7 +60,8 @@ func (s *SqliteStore) initTables() error {
 			commitment TEXT UNIQUE,
 			height INTEGER,
 			l2_start INTEGER,
-			l2_end INTEGER
+			l2_end INTEGER,
+			l1_block INTEGER
 		)
 	`)
 	if err != nil {
@@ -123,10 +124,10 @@ func (s *SqliteStore) StoreLocation(location *CelestiaLocation) error {
 	// Insert the location
 	result, err := tx.Exec(`
 		INSERT OR IGNORE INTO celestia_locations
-		(commitment, height, l2_start, l2_end)
-		VALUES (?, ?, ?, ?)
+		(commitment, height, l2_start, l2_end, l1_block)
+		VALUES (?, ?, ?, ?, ?)
 	`, location.Commitment, location.Height,
-		location.L2Range.Start, location.L2Range.End)
+		location.L2Range.Start, location.L2Range.End, location.L1Block)
 	if err != nil {
 		return err
 	}
@@ -180,7 +181,7 @@ func (s *SqliteStore) GetLocation(l2BlockNum uint64) (*CelestiaLocation, error) 
 
 	err := s.db.QueryRow(`
 		SELECT
-			c.commitment, c.height, c.l2_start, c.l2_end
+			c.commitment, c.height, c.l2_start, c.l2_end, c.l1_block
 		FROM
 			celestia_locations c
 		JOIN
@@ -189,7 +190,7 @@ func (s *SqliteStore) GetLocation(l2BlockNum uint64) (*CelestiaLocation, error) 
 			m.l2_block_num = ?
 	`, l2BlockNum).Scan(
 		&location.Commitment, &location.Height,
-		&start, &end,
+		&start, &end, &location.L1Block,
 	)
 
 	if err == sql.ErrNoRows {
@@ -213,14 +214,14 @@ func (s *SqliteStore) GetLocationByCommitment(commitment string) (*CelestiaLocat
 
 	err := s.db.QueryRow(`
 		SELECT
-			commitment, height, l2_start, l2_end
+			commitment, height, l2_start, l2_end, l1_block
 		FROM
 			celestia_locations
 		WHERE
 			commitment = ?
 	`, commitment).Scan(
 		&location.Commitment, &location.Height,
-		&start, &end,
+		&start, &end, &location.L1Block,
 	)
 
 	if err == sql.ErrNoRows {
@@ -253,7 +254,7 @@ func (s *SqliteStore) GetAllLocations() ([]*CelestiaLocation, error) {
 
 	rows, err := s.db.Query(`
 		SELECT
-			commitment, height, l2_start, l2_end
+			commitment, height, l2_start, l2_end, l1_block
 		FROM
 			celestia_locations
 	`)
@@ -268,7 +269,7 @@ func (s *SqliteStore) GetAllLocations() ([]*CelestiaLocation, error) {
 		var start, end uint64
 		if err := rows.Scan(
 			&location.Commitment, &location.Height,
-			&start, &end,
+			&start, &end, &location.L1Block,
 		); err != nil {
 			return nil, err
 		}

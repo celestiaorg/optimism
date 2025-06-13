@@ -36,6 +36,7 @@ type CelestiaLocation struct {
 	Height     uint64  `json:"height"`
 	Commitment string  `json:"commitment"`
 	L2Range    L2Range `json:"l2_range"`
+	L1Block    uint64  `json:"l1_block"`
 }
 
 // L2Range represents a range of L2 block numbers
