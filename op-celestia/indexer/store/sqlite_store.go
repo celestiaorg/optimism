@@ -84,7 +84,20 @@ func (s *SqliteStore) initTables() error {
 	_, err = s.db.Exec(`
 		INSERT OR IGNORE INTO metadata (key, value) VALUES ('lastIndexedBlock', 0)
 	`)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Add l1_block column if it doesn't exist (for existing databases)
+	_, err = s.db.Exec(`
+		ALTER TABLE celestia_locations ADD COLUMN l1_block INTEGER DEFAULT 0
+	`)
+	// Ignore error if column already exists
+	if err != nil && err.Error() != "duplicate column name: l1_block" {
+		// Log but don't fail - column might already exist
+	}
+
+	return nil
 }
 
 // SetLastIndexedBlock sets the last indexed L2 block number

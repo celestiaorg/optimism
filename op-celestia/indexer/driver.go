@@ -119,6 +119,23 @@ func (d *IndexerDriver) GetLocation(l2BlockNum uint64) (*store.CelestiaLocation,
 	return d.Store.GetLocation(l2BlockNum)
 }
 
+// GetStatus returns the current status of the indexer
+func (d *IndexerDriver) GetStatus() (lastIndexedBlock uint64, indexedBlocks int, running bool, err error) {
+	lastIndexedBlock, err = d.Store.GetLastIndexedBlock()
+	if err != nil {
+		return 0, 0, false, fmt.Errorf("failed to get last indexed block: %w", err)
+	}
+
+	indexedBlocks, err = d.Store.GetIndexedBlockCount()
+	if err != nil {
+		return lastIndexedBlock, 0, false, fmt.Errorf("failed to get indexed block count: %w", err)
+	}
+
+	running = d.running.Load()
+
+	return lastIndexedBlock, indexedBlocks, running, nil
+}
+
 // indexingLoop is the main loop that performs indexing operations
 func (d *IndexerDriver) indexingLoop() {
 	defer d.wg.Done()
@@ -207,7 +224,10 @@ func (d *IndexerDriver) indexBlockRange(startBlock, endBlock uint64) error {
 			continue
 		}
 
-		d.Store.SetLastIndexedBlock(blockNum)
+		if err := d.Store.SetLastIndexedBlock(blockNum); err != nil {
+			d.Log.Error("Failed to update last indexed block", "block", blockNum, "err", err)
+			return fmt.Errorf("failed to update last indexed block: %w", err)
+		}
 		d.Metr.RecordIndexedBlock(blockNum)
 	}
 
@@ -245,13 +265,27 @@ func (d *IndexerDriver) processBatchTransaction(tx *types.Transaction, blockNum 
 		return nil
 	}
 
-	// Check if this is a Celestia reference (version byte 0xce)
-	if data[0] != celestia.DerivationVersionCelestia {
-		return nil // Not a Celestia reference, skip
+	// Check if this is an OP Stack Celestia commitment
+	// Format: version_byte(0x01) + commitment_type + da_layer_byte(0x0c) + payload
+	if len(data) < 3 {
+		return nil // Not enough data
 	}
 
-	if len(data) < 41 { // 1 byte version + 8 bytes height + 32 bytes commitment
-		return fmt.Errorf("invalid Celestia reference data length: %d", len(data))
+	if data[0] == 0x01 && data[2] == 0x0c {
+		// This is OP Stack Alt-DA format for Celestia
+		if len(data) < 43 { // 3 bytes header + 8 bytes height + 32 bytes commitment
+			return fmt.Errorf("invalid OP Stack Celestia commitment length: %d", len(data))
+		}
+
+		// Skip the 3-byte header to get the payload
+		payload := data[3:]
+		height, commitmentBytes := celestia.SplitID(payload)
+		commitment := base64.StdEncoding.EncodeToString(commitmentBytes)
+
+		d.Log.Debug("Found OP Stack Celestia commitment", "height", height, "commitment", commitment, "tx", tx.Hash())
+
+		// Fetch and parse frames from Celestia
+		return d.processCelestiaFrames(payload, blockNum)
 	}
 
 	// Fetch and parse frames from Celestia
@@ -401,16 +435,25 @@ func (d *IndexerDriver) extractL2Range(frames []derive.Frame) (*store.L2Range, e
 						"err", err)
 					continue
 				}
-				// Span batches require current block to be set
+				// If current block is not set, calculate it from the span batch timestamp
 				if d.currentBlock.Load() == 0 {
-					d.Log.Warn("Need to have processed at least one singular batch to derive span batch",
+					// Calculate the starting block number from the first block's timestamp
+					// The first block in the span has timestamp: genesisTime + relTimestamp
+					firstBlockTimestamp := spanBatch.GetTimestamp()
+					startingBlockNum := (firstBlockTimestamp - d.Cfg.L2GenesisTime) / d.Cfg.L2BlockTime
+					d.currentBlock.Store(startingBlockNum)
+					d.Log.Info("Calculated starting block from span batch",
+						"starting_block", startingBlockNum,
+						"timestamp", firstBlockTimestamp,
 						"frame_index", frameIndex,
 						"channel_id", frame.ID.String())
-					continue
 				}
 				if spanBatch != nil {
+					// Get the starting block number for this span
+					startBlock := d.currentBlock.Load()
 					for batchIndex := range spanBatch.Batches {
-						currentBlock := d.currentBlock.Add(uint64(batchIndex) + 1)
+						// Each batch in the span represents one consecutive L2 block
+						currentBlock := startBlock + uint64(batchIndex) + 1
 						if batchIndex == 0 && d.Cfg.VerifyParentCheck {
 							l2Block, err := d.L2Client.BlockRefByNumber(context.Background(), currentBlock)
 							if err != nil {
@@ -428,8 +471,9 @@ func (d *IndexerDriver) extractL2Range(frames []derive.Frame) (*store.L2Range, e
 							}
 						}
 						l2Blocks = append(l2Blocks, currentBlock)
-						d.currentBlock.Store(currentBlock)
 					}
+					// Update currentBlock to the last processed block
+					d.currentBlock.Store(startBlock + uint64(len(spanBatch.Batches)))
 				} else {
 					d.Log.Warn("Got nil span batch",
 						"frame_index", frameIndex,
@@ -444,6 +488,11 @@ func (d *IndexerDriver) extractL2Range(frames []derive.Frame) (*store.L2Range, e
 					"channel_id", frame.ID.String())
 			}
 		}
+	}
+
+	// Check if we have any L2 blocks
+	if len(l2Blocks) == 0 {
+		return nil, fmt.Errorf("no L2 blocks found in frames")
 	}
 
 	// pre-holocene batches may be out of order
