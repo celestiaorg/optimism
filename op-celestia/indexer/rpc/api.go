@@ -31,6 +31,7 @@ type IndexerAPI struct {
 // IndexerDriver interface for the indexer operations
 type IndexerDriver interface {
 	GetLocation(l2BlockNum uint64) (*CelestiaLocation, error)
+	GetStatus() (lastIndexedBlock uint64, indexedBlocks int, running bool, err error)
 }
 
 // NewIndexerAPI creates a new IndexerAPI instance
@@ -130,13 +131,22 @@ type IndexerStatusResponse struct {
 func (api *IndexerAPI) GetIndexerStatus(ctx context.Context) (*IndexerStatusResponse, error) {
 	api.log.Debug("GetIndexerStatus called")
 
-	// For now, return basic info - this would need to be extended
-	// to get actual status from the driver
-	response := &IndexerStatusResponse{
-		LastIndexedBlock: 0,    // Would get from driver/storage
-		IndexedBlocks:    0,    // Would get from driver/storage
-		Running:          true, // Would get from driver
+	lastIndexedBlock, indexedBlocks, running, err := api.driver.GetStatus()
+	if err != nil {
+		api.log.Warn("Failed to get indexer status", "err", err)
+		return nil, fmt.Errorf("failed to get indexer status: %w", err)
 	}
+
+	response := &IndexerStatusResponse{
+		LastIndexedBlock: lastIndexedBlock,
+		IndexedBlocks:    indexedBlocks,
+		Running:          running,
+	}
+
+	api.log.Debug("GetIndexerStatus successful",
+		"last_indexed_block", lastIndexedBlock,
+		"indexed_blocks", indexedBlocks,
+		"running", running)
 
 	return response, nil
 }

@@ -359,6 +359,10 @@ func (da *driverAdapter) GetLocation(l2BlockNum uint64) (*rpc.CelestiaLocation, 
 	}, nil
 }
 
+func (da *driverAdapter) GetStatus() (lastIndexedBlock uint64, indexedBlocks int, running bool, err error) {
+	return da.driver.GetStatus()
+}
+
 var _ cliapp.Lifecycle = (*IndexerService)(nil)
 
 // HTTPEndpoint returns the HTTP endpoint of the RPC server
