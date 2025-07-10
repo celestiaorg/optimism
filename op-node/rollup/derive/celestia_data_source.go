@@ -60,7 +60,8 @@ func (s *CelestiaDataSource) Next(ctx context.Context) (eth.Data, error) {
 	cancel()
 
 	if err != nil {
-		return nil, NewResetError(fmt.Errorf("celestia: failed to resolve frame: %w", err))
+		// return temporary error so we can keep retrying.
+		return nil, NewTemporaryError(fmt.Errorf("celestia: failed to resolve frame: %w", err))
 	}
 
 	if len(blobs) != 1 {
