@@ -415,7 +415,7 @@ func (bs *BatcherService) initAltDA(cfg *CLIConfig) error {
 }
 
 func (bs *BatcherService) initDA(cfg *CLIConfig) error {
-	if !cfg.DaConfig.Enabled {
+	if !cfg.DaConfig.IsEnabled() {
 		bs.UseCelestiaDA = false
 		bs.DAClient = nil
 		return nil

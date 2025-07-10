@@ -22,8 +22,6 @@ const (
 )
 
 const (
-	// EnabledFlagName defines the flag for enabling Celestia
-	EnabledFlagName = "da.enabled"
 	// RPCFlagName defines the flag for the rpc url
 	RPCFlagName = "da.rpc"
 	// AuthTokenFlagName defines the flag for the auth token
@@ -49,12 +47,6 @@ const (
 
 func CLIFlags(envPrefix string) []cli.Flag {
 	return []cli.Flag{
-		&cli.BoolFlag{
-			Name:    EnabledFlagName,
-			Usage:   "enable Celestia",
-			Value:   false,
-			EnvVars: opservice.PrefixEnvVar(envPrefix, "DA_ENABLED"),
-		},
 		&cli.StringFlag{
 			Name:    RPCFlagName,
 			Usage:   "dial address of the data availability rpc client; supports grpc, http, https",
@@ -104,7 +96,6 @@ func CLIFlags(envPrefix string) []cli.Flag {
 }
 
 type CLIConfig struct {
-	Enabled      bool
 	Rpc          string
 	AuthToken    string
 	Namespace    string
@@ -112,20 +103,16 @@ type CLIConfig struct {
 	GasPrice     float64
 }
 
+func (c CLIConfig) IsEnabled() bool {
+	return c.Rpc != "" && c.AuthToken != "" && c.Namespace != ""
+}
+
 func (c CLIConfig) Check() error {
-	if c.Enabled {
-		if c.Rpc == "" {
-			return fmt.Errorf("rpc url is required when Celestia is enabled")
-		}
-		if _, err := url.Parse(c.Rpc); err != nil {
-			return fmt.Errorf("rpc url is invalid: %w", err)
-		}
-		if c.AuthToken == "" {
-			return fmt.Errorf("auth token is required when Celestia is enabled")
-		}
-		if c.Namespace == "" {
-			return fmt.Errorf("namespace is required when Celestia is enabled")
-		}
+	if !c.IsEnabled() {
+		return nil
+	}
+	if _, err := url.Parse(c.Rpc); err != nil {
+		return fmt.Errorf("rpc url is invalid: %w", err)
 	}
 	return nil
 }
@@ -138,7 +125,6 @@ func NewCLIConfig() CLIConfig {
 
 func ReadCLIConfig(ctx *cli.Context) CLIConfig {
 	return CLIConfig{
-		Enabled:      ctx.Bool(EnabledFlagName),
 		Rpc:          ctx.String(RPCFlagName),
 		AuthToken:    ctx.String(AuthTokenFlagName),
 		Namespace:    ctx.String(NamespaceFlagName),
@@ -152,14 +138,6 @@ func ReadCLIConfigFromEnv(envPrefix string) CLIConfig {
 		Rpc:          defaultRPC,
 		FallbackMode: FallbackModeCallData,
 		GasPrice:     defaultGasPrice,
-	}
-
-	if value := os.Getenv(envPrefix + "_" + "DA_ENABLED"); value != "" {
-		if parsed, err := strconv.ParseBool(value); err == nil {
-			result.Enabled = parsed
-		} else {
-			log.Crit("invalid enabled flag", "value", value)
-		}
 	}
 
 	if value := os.Getenv(envPrefix + "_" + "DA_RPC"); value != "" {
