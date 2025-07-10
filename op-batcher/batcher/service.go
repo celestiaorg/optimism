@@ -139,6 +139,10 @@ func (bs *BatcherService) initFromCLIConfig(ctx context.Context, version string,
 	if err := bs.initAltDA(cfg); err != nil {
 		return fmt.Errorf("failed to init AltDA: %w", err)
 	}
+	// init before driver and channel config
+	if err := bs.initDA(cfg); err != nil {
+		return fmt.Errorf("failed to start da server: %w", err)
+	}
 	if err := bs.initChannelConfig(cfg); err != nil {
 		return fmt.Errorf("failed to init channel config: %w", err)
 	}
@@ -148,10 +152,6 @@ func (bs *BatcherService) initFromCLIConfig(ctx context.Context, version string,
 	}
 	if err := bs.initPProf(cfg); err != nil {
 		return fmt.Errorf("failed to init profiling: %w", err)
-	}
-	// init before driver
-	if err := bs.initDA(cfg); err != nil {
-		return fmt.Errorf("failed to start da server: %w", err)
 	}
 	bs.initDriver(opts...)
 	if err := bs.initRPCServer(cfg); err != nil {
@@ -288,6 +288,7 @@ func (bs *BatcherService) initChannelConfig(cfg *CLIConfig) error {
 	}
 	bs.Log.Info("Initialized channel-config",
 		"da_type", cfg.DataAvailabilityType,
+		"use_celestia_da", bs.UseCelestiaDA,
 		"use_alt_da", bs.UseAltDA,
 		"use_blobs", cc.UseBlobs,
 		"max_frame_size", cc.MaxFrameSize,
