@@ -65,9 +65,9 @@ func (s *CelestiaDataSource) Next(ctx context.Context) (eth.Data, error) {
 	}
 
 	if len(blobs) != 1 {
-		log.Warn("celestia: unexpected length for blobs", "expected", 1, "got", len(blobs))
+		s.log.Warn("celestia: unexpected length for blobs", "expected", 1, "got", len(blobs))
 		if len(blobs) == 0 {
-			log.Warn("celestia: skipping empty blobs")
+			s.log.Warn("celestia: skipping empty blobs")
 			s.comm = nil
 			// skip the input
 			return s.Next(ctx)
