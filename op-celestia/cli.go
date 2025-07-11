@@ -1,6 +1,7 @@
 package celestia
 
 import (
+	"encoding/hex"
 	"fmt"
 	"net/url"
 	"os"
@@ -113,6 +114,9 @@ func (c CLIConfig) Check() error {
 	}
 	if _, err := url.Parse(c.Rpc); err != nil {
 		return fmt.Errorf("rpc url is invalid: %w", err)
+	}
+	if _, err := hex.DecodeString(c.Namespace); err != nil {
+		return fmt.Errorf("namespace is invalid hex: %w", err)
 	}
 	return nil
 }
