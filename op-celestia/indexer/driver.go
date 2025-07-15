@@ -114,9 +114,9 @@ func (d *IndexerDriver) Stop() error {
 	return nil
 }
 
-// GetLocation returns the Celestia location for a given L2 block number
-func (d *IndexerDriver) GetLocation(l2BlockNum uint64) (*store.CelestiaLocation, error) {
-	return d.Store.GetLocation(l2BlockNum)
+// GetDALocation returns the DA location (either Celestia or Ethereum) for a given L2 block number
+func (d *IndexerDriver) GetDALocation(l2BlockNum uint64) (store.DALocation, error) {
+	return d.Store.GetDALocation(l2BlockNum)
 }
 
 // GetStatus returns the current status of the indexer
@@ -265,31 +265,38 @@ func (d *IndexerDriver) processBatchTransaction(tx *types.Transaction, blockNum 
 		return nil
 	}
 
-	// Check if this is an OP Stack Celestia commitment
-	// Format: version_byte(0x01) + commitment_type + da_layer_byte(0x0c) + payload
-	if len(data) < 3 {
-		return nil // Not enough data
-	}
+	// Check version byte to determine DA type
+	switch data[0] {
+	case 0x00:
+		d.Log.Debug("Found ETH DA batch", "tx", tx.Hash(), "l1_block", blockNum)
+		return d.processEthDABatch(tx, blockNum)
 
-	if data[0] == 0x01 && data[2] == 0x0c {
-		// This is OP Stack Alt-DA format for Celestia
-		if len(data) < 43 { // 3 bytes header + 8 bytes height + 32 bytes commitment
-			return fmt.Errorf("invalid OP Stack Celestia commitment length: %d", len(data))
+	case 0x01:
+		// Check if this is an OP Stack Celestia commitment
+		// Format: version_byte(0x01) + commitment_type(0x01) + da_layer_byte(0x0c) + payload
+		if len(data) < 3 {
+			return nil // Not enough data
 		}
 
-		// Skip the 3-byte header to get the payload
-		payload := data[3:]
-		height, commitmentBytes := celestia.SplitID(payload)
-		commitment := base64.StdEncoding.EncodeToString(commitmentBytes)
+		if data[1] == 0x01 && data[2] == 0x0c {
+			// Commitment type and DA layer byte for Celestia
+			if len(data) < 43 { // 3 bytes header + 8 bytes height + 32 bytes commitment
+				return fmt.Errorf("invalid OP Stack Celestia commitment length: %d", len(data))
+			}
 
-		d.Log.Debug("Found OP Stack Celestia commitment", "height", height, "commitment", commitment, "tx", tx.Hash())
+			// Skip the 3-byte header to get the payload
+			payload := data[3:]
+			height, commitmentBytes := celestia.SplitID(payload)
+			commitment := base64.StdEncoding.EncodeToString(commitmentBytes)
 
-		// Fetch and parse frames from Celestia
-		return d.processCelestiaFrames(payload, blockNum)
+			d.Log.Debug("Found OP Stack Celestia commitment", "height", height, "commitment", commitment, "tx", tx.Hash())
+
+			// Fetch and parse frames from Celestia
+			return d.processCelestiaFrames(payload, blockNum)
+		}
 	}
 
-	// Fetch and parse frames from Celestia
-	return d.processCelestiaFrames(data[1:], blockNum)
+	return nil
 }
 
 // processCelestiaFrames fetches frames from Celestia and extracts L2 block ranges
@@ -530,6 +537,53 @@ func (d *IndexerDriver) verifyWithOpNode(l2BlockNum uint64) error {
 		"l2_block", l2BlockNum,
 		"block_hash", output.BlockRef.Hash,
 		"output_root", output.OutputRoot)
+
+	return nil
+}
+
+// processEthDABatch processes ETH DA batches
+func (d *IndexerDriver) processEthDABatch(tx *types.Transaction, blockNum uint64) error {
+	// Parse frames directly from calldata
+	frames, err := derive.ParseFrames(tx.Data())
+	if err != nil {
+		return fmt.Errorf("failed to parse ETH DA frames: %w", err)
+	}
+
+	if len(frames) == 0 {
+		return fmt.Errorf("no frames found in ETH DA batch")
+	}
+
+	// Extract L2 block range from frames
+	l2Range, err := d.extractL2Range(frames)
+	if err != nil {
+		return fmt.Errorf("failed to extract L2 range from ETH DA: %w", err)
+	}
+
+	// Store the ETH DA location
+	location := &store.EthereumLocation{
+		TxHash:  tx.Hash().Hex(),
+		L2Range: *l2Range,
+		L1Block: blockNum,
+	}
+
+	err = d.Store.StoreEthLocation(location)
+	if err != nil {
+		return fmt.Errorf("failed to store ETH DA location: %w", err)
+	}
+	d.Metr.RecordLocationStored(location.L2Range.Start, location.L2Range.End)
+
+	d.Log.Info("Stored ETH DA location",
+		"tx_hash", tx.Hash().Hex(),
+		"l2_start", l2Range.Start,
+		"l2_end", l2Range.End,
+		"l1_block", blockNum)
+
+	// Optional verification against op-node
+	if d.OpNodeClient != nil {
+		if err := d.verifyWithOpNode(l2Range.Start); err != nil {
+			d.Log.Warn("Verification with op-node failed", "err", err, "l2_block", l2Range.Start)
+		}
+	}
 
 	return nil
 }

@@ -341,22 +341,8 @@ type driverAdapter struct {
 	driver *IndexerDriver
 }
 
-func (da *driverAdapter) GetLocation(l2BlockNum uint64) (*rpc.CelestiaLocation, error) {
-	location, err := da.driver.GetLocation(l2BlockNum)
-	if err != nil {
-		return nil, err
-	}
-
-	// Convert from indexer types to RPC types
-	return &rpc.CelestiaLocation{
-		Height:     location.Height,
-		Commitment: location.Commitment,
-		L2Range: rpc.L2Range{
-			Start: location.L2Range.Start,
-			End:   location.L2Range.End,
-		},
-		L1Block: location.L1Block,
-	}, nil
+func (da *driverAdapter) GetDALocation(l2BlockNum uint64) (store.DALocation, error) {
+	return da.driver.GetDALocation(l2BlockNum)
 }
 
 func (da *driverAdapter) GetStatus() (lastIndexedBlock uint64, indexedBlocks int, running bool, err error) {
