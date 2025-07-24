@@ -85,6 +85,10 @@ variable "OP_DRIPPER_VERSION" {
   default = "${GIT_VERSION}"
 }
 
+variable "OP_CELESTIA_INDEXER_VERSION" {
+  default = "${GIT_VERSION}"
+}
+
 
 target "op-node" {
   dockerfile = "ops/docker/op-stack-go/Dockerfile"
@@ -252,4 +256,16 @@ target "op-dripper" {
   target = "op-dripper-target"
   platforms = split(",", PLATFORMS)
   tags = [for tag in split(",", IMAGE_TAGS) : "${REGISTRY}/${REPOSITORY}/op-dripper:${tag}"]
+}
+
+target "op-celestia-indexer" {
+  dockerfile = "ops/docker/op-stack-go/Dockerfile"
+  context = "."
+  args = {
+    GIT_COMMIT = "${GIT_COMMIT}"
+    GIT_DATE = "${GIT_DATE}"
+    OP_CELESTIA_INDEXER_VERSION = "${OP_CELESTIA_INDEXER_VERSION}"
+  }
+  platforms = split(",", PLATFORMS)
+  tags = [for tag in split(",", IMAGE_TAGS) : "${REGISTRY}/${REPOSITORY}/op-celestia-indexer:${tag}"]
 }
