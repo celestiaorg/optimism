@@ -1,6 +1,6 @@
 package store
 
-// Store defines the interface for L2 block -> Celestia location storage
+// Store defines the interface for L2 block -> DA location storage
 // Can be implemented by in-memory storage or database-backed storage
 type Store interface {
 	// SetLastIndexedBlock sets the last indexed L2 block number
@@ -12,23 +12,27 @@ type Store interface {
 	// StoreLocation stores the Celestia location for a range of L2 blocks
 	StoreLocation(location *CelestiaLocation) error
 
-	// GetLocation returns the Celestia location for a given L2 block number
-	GetLocation(l2BlockNum uint64) (*CelestiaLocation, error)
+	// StoreEthLocation stores the Ethereum DA location for a range of L2 blocks
+	StoreEthLocation(location *EthereumLocation) error
 
-	// GetLocationByCommitment returns the Celestia location for a given commitment
-	GetLocationByCommitment(commitment string) (*CelestiaLocation, error)
+	// GetDALocation returns the DA location (either Celestia or Ethereum) for a given L2 block number
+	GetDALocation(l2BlockNum uint64) (DALocation, error)
 
 	// GetIndexedBlockCount returns the number of indexed L2 blocks
 	GetIndexedBlockCount() (int, error)
-
-	// GetAllLocations returns all stored locations
-	GetAllLocations() ([]*CelestiaLocation, error)
 
 	// Clear removes all stored data
 	Clear() error
 
 	// String returns a string representation of the storage state
 	String() string
+}
+
+// DALocation is a generic interface for all DA locations
+type DALocation interface {
+	GetType() string
+	GetL2Range() L2Range
+	GetL1Block() uint64
 }
 
 // CelestiaLocation represents the location of L2 blocks on Celestia
@@ -39,8 +43,41 @@ type CelestiaLocation struct {
 	L1Block    uint64  `json:"l1_block"`
 }
 
+// EthereumLocation represents the location of L2 blocks on Ethereum DA (standard calldata)
+type EthereumLocation struct {
+	TxHash  string  `json:"tx_hash"`
+	L2Range L2Range `json:"l2_range"`
+	L1Block uint64  `json:"l1_block"`
+}
+
 // L2Range represents a range of L2 block numbers
 type L2Range struct {
 	Start uint64 `json:"start"`
 	End   uint64 `json:"end"`
+}
+
+// Implement DALocation interface for CelestiaLocation
+func (c *CelestiaLocation) GetType() string {
+	return "celestia"
+}
+
+func (c *CelestiaLocation) GetL2Range() L2Range {
+	return c.L2Range
+}
+
+func (c *CelestiaLocation) GetL1Block() uint64 {
+	return c.L1Block
+}
+
+// Implement DALocation interface for EthereumLocation
+func (e *EthereumLocation) GetType() string {
+	return "ethereum"
+}
+
+func (e *EthereumLocation) GetL2Range() L2Range {
+	return e.L2Range
+}
+
+func (e *EthereumLocation) GetL1Block() uint64 {
+	return e.L1Block
 }

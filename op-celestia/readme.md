@@ -1,21 +1,21 @@
 # op-celestia-indexer
 
-The `op-celestia-indexer` is a service that indexes L2 block locations on the
-Celestia Data Availability (DA) layer. It tracks where L2 blocks are stored on
-Celestia by parsing batch transactions and maintaining a mapping between L2
-block numbers and their corresponding Celestia locations.
+The `op-celestia-indexer` is a service that indexes L2 block locations on both
+Celestia DA and Ethereum DA. It tracks where L2 blocks are
+stored by parsing batch transactions and maintaining a mapping between L2 block
+numbers and their corresponding DA locations.
 
 ## Overview
 
-When using Celestia as the DA layer for Optimism, L2 batch data (frames) are posted to Celestia instead of being included as calldata in L1 transactions. Instead, L1 transactions contain a 40-byte reference:
-- 1 byte version marker (`0xce`)
-- 8 bytes Celestia block height (little-endian)
-- 32 bytes commitment hash
+When using Celestia as the DA layer for Optimism, L2 batch data (frames) are posted to Celestia instead of being included as calldata in L1 transactions. L1 transactions contain:
+- OP Stack Alt-DA format: version byte (`0x01`) + commitment type + DA layer byte (`0x0c`) + 8 bytes height + 32 bytes commitment
 
-The indexer service monitors L1 batch inbox transactions for Celestia references,
-fetches the corresponding frame data from Celestia, parses frames to determine
+When using Ethereum DA, L2 batch data is included as calldata in L1 transactions with frame version byte `0x00`.
+
+The indexer service monitors L1 batch inbox transactions, determines the DA type based on the version byte,
+fetches the corresponding frame data from Celestia or L1 calldata, parses frames to determine
 which L2 blocks they contain, maintains an index mapping L2 block numbers to
-Celestia locations, and provides an RPC API to query L2 block locations.
+DA locations, and provides an RPC API to query L2 block locations.
 
 ## CLI Flags
 
@@ -27,7 +27,6 @@ Celestia locations, and provides an RPC API to query L2 block locations.
 - `--op-node-rpc`: HTTP provider URL for op-node (for verification)
 
 ### Optional Flags
-- `--enable-admin`: Enable admin API (default: false)
 - `--poll-interval`: Polling interval for new blocks (default: 12s)
 - `--network-timeout`: Timeout for network requests (default: 10s)
 - `--verify-parent-check`: Enable parent check verification in span batches (default: true)
@@ -48,29 +47,51 @@ Celestia locations, and provides an RPC API to query L2 block locations.
 
 ## API Usage
 
-### Get Celestia Location
+### Get DA Location
 
-Query the Celestia location for a specific L2 block:
+Query the DA location for a specific L2 block (works with both Celestia and Ethereum DA):
 
 ```bash
 curl -X POST -H "Content-Type: application/json" -s \
-  --data '{"jsonrpc":"2.0","method":"admin_getCelestiaLocation","params":[355],"id":1}' \
+  --data '{"jsonrpc":"2.0","method":"admin_getDALocation","params":[355],"id":1}' \
   http://localhost:57220 | jq .
 ```
 
-Response:
+Response for Celestia DA:
 ```json
 {
   "jsonrpc": "2.0",
   "id": 1,
   "result": {
-    "height": 353,
-    "commitment": "YQEAAAAAAADg6goIrTykl5jyHlGz6Bl2tYTDYzffUY39g3inPvMGDQ==",
-    "l2_range": {
-      "start": 354,
-      "end": 359
-    },
-    "l1_block": 12345
+    "type": "celestia",
+    "data": {
+      "height": 353,
+      "commitment": "YQEAAAAAAADg6goIrTykl5jyHlGz6Bl2tYTDYzffUY39g3inPvMGDQ==",
+      "l2_range": {
+        "start": 354,
+        "end": 359
+      },
+      "l1_block": 12345
+    }
+  }
+}
+```
+
+Response for Ethereum DA:
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "type": "ethereum",
+    "data": {
+      "tx_hash": "0x123...",
+      "l2_range": {
+        "start": 354,
+        "end": 359
+      },
+      "l1_block": 12345
+    }
   }
 }
 ```

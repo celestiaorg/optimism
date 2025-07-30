@@ -37,6 +37,7 @@ jobs:
           - da-server
           - op-supervisor
           - cannon
+          - op-celestia-indexer
     steps:
       - uses: actions/checkout@v4
 
