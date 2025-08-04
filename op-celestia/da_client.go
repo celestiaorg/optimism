@@ -1,13 +1,13 @@
 package celestia
 
 import (
+	"context"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"time"
 
-	"github.com/rollkit/go-da"
-	"github.com/rollkit/go-da/proxy"
+	"github.com/celestiaorg/celestia-node/api/rpc/client"
 )
 
 // heightLen is a length (in bytes) of serialized height.
@@ -31,15 +31,15 @@ func SplitID(id []byte) (uint64, []byte) {
 }
 
 type DAClient struct {
-	Client       da.DA
+	Client       *client.Client
 	GetTimeout   time.Duration
-	Namespace    da.Namespace
+	Namespace    []byte
 	FallbackMode string
 	GasPrice     float64
 }
 
 func NewDAClient(rpc, token, namespace, fallbackMode string, gasPrice float64) (*DAClient, error) {
-	client, err := proxy.NewClient(rpc, token)
+	client, err := client.NewClient(context.Background(), rpc, token)
 	if err != nil {
 		return nil, err
 	}
