@@ -21,6 +21,8 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
 
+	libshare "github.com/celestiaorg/go-square/v2/share"
+	"github.com/celestiaorg/celestia-node/blob"
 	altda "github.com/ethereum-optimism/optimism/op-alt-da"
 	"github.com/ethereum-optimism/optimism/op-batcher/batcher/throttler"
 	config "github.com/ethereum-optimism/optimism/op-batcher/config"
@@ -1077,16 +1079,20 @@ func (l *BatchSubmitter) calldataTxCandidate(data []byte) *txmgr.TxCandidate {
 func (l *BatchSubmitter) celestiaTxCandidate(data []byte) (*txmgr.TxCandidate, error) {
 	l.Log.Info("Building Celestia transaction candidate", "size", len(data))
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Duration(l.RollupConfig.BlockTime)*time.Second)
-	ids, err := l.DAClient.Client.Submit(ctx, [][]byte{data}, l.DAClient.GasPrice, l.DAClient.Namespace)
+	defer cancel()
+	namespace := libshare.MustNewV0Namespace(l.DAClient.Namespace)
+	b, err := blob.NewBlob(libshare.ShareVersionZero, namespace, data, nil)
+	if err != nil {
+		return nil, err
+	}
+	height, err := l.DAClient.Client.Blob.Submit(ctx, []*blob.Blob{b}, nil)
 	cancel()
 	if err != nil {
 		return nil, err
 	}
-	if len(ids) != 1 {
-		return nil, fmt.Errorf("celestia: expected 1 id, got %d", len(ids))
-	}
-	l.Log.Info("celestia: blob successfully submitted", "id", hex.EncodeToString(ids[0]))
-	data = append([]byte{celestia.DerivationVersionCelestia}, ids[0]...)
+	id := celestia.MakeID(height, b.Commitment)
+	l.Log.Info("celestia: blob successfully submitted", "id", hex.EncodeToString(id))
+	data = append([]byte{celestia.DerivationVersionCelestia}, id...)
 	return l.calldataTxCandidate(data), nil
 }
 

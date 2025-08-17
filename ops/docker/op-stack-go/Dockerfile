@@ -21,7 +21,7 @@ ARG KONA_VERSION=none
 ARG ASTERISC_VERSION=none
 
 # We may be cross-building for another platform. Specify which platform we need as builder.
-FROM --platform=$BUILDPLATFORM golang:1.23.8-alpine3.20 AS builder
+FROM --platform=$BUILDPLATFORM golang:1.24.4-alpine3.22 AS builder
 
 RUN apk add --no-cache curl tar gzip make gcc musl-dev linux-headers git jq bash
 
@@ -168,7 +168,7 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
 
 FROM --platform=$BUILDPLATFORM builder AS op-celestia-indexer-builder
 ARG OP_CELESTIA_INDEXER_VERSION=v0.0.0
-RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build cd op-celestia && just op-celestia-indexer \
+RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache/go-build cd op-celestia && just \
   GOOS=$TARGETOS GOARCH=$TARGETARCH GITCOMMIT=$GIT_COMMIT GITDATE=$GIT_DATE VERSION="$OP_CELESTIA_INDEXER_VERSION"
 
 FROM $TARGET_BASE_IMAGE AS cannon-target

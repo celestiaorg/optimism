@@ -31,7 +31,6 @@ jobs:
           - op-program
           - op-proposer
           - op-challenger
-          - proofs-tools
           - op-dispute-mon
           - op-conductor
           - da-server
