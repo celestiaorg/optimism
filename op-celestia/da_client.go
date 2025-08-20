@@ -7,7 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/celestiaorg/celestia-node/api/rpc/client"
+	"github.com/celestiaorg/celestia-node/api/client"
+	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 )
 
 // heightLen is a length (in bytes) of serialized height.
@@ -39,7 +40,30 @@ type DAClient struct {
 }
 
 func NewDAClient(rpc, token, namespace, fallbackMode string, gasPrice float64) (*DAClient, error) {
-	client, err := client.NewClient(context.Background(), rpc, token)
+	keyname := "my_celes_key"
+	kr, err := client.KeyringWithNewKey(client.KeyringConfig{
+		KeyName:     keyname,
+		BackendName: keyring.BackendTest,
+	}, "~/.celestia-light-mocha-4/keys")
+	if err != nil {
+		return nil, err
+	}
+	cfg := client.Config{
+		ReadConfig: client.ReadConfig{
+			BridgeDAAddr: "http://localhost:26658",
+			DAAuthToken:  "token",
+		},
+		SubmitConfig: client.SubmitConfig{
+			DefaultKeyName: keyname,
+			Network:        "mocha-4",
+			CoreGRPCConfig: client.CoreGRPCConfig{
+				Addr:       "celestia-testnet-consensus.itrocket.net:9090",
+				TLSEnabled: false,
+				AuthToken:  "token",
+			},
+		},
+	}
+	client, err := client.New(context.Background(), cfg, kr)
 	if err != nil {
 		return nil, err
 	}
