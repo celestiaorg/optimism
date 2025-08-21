@@ -21,8 +21,9 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/rpc"
 
-	libshare "github.com/celestiaorg/go-square/v2/share"
 	"github.com/celestiaorg/celestia-node/blob"
+	"github.com/celestiaorg/celestia-node/state"
+	libshare "github.com/celestiaorg/go-square/v2/share"
 	altda "github.com/ethereum-optimism/optimism/op-alt-da"
 	"github.com/ethereum-optimism/optimism/op-batcher/batcher/throttler"
 	config "github.com/ethereum-optimism/optimism/op-batcher/config"
@@ -1080,13 +1081,15 @@ func (l *BatchSubmitter) celestiaTxCandidate(data []byte) (*txmgr.TxCandidate, e
 	l.Log.Info("Building Celestia transaction candidate", "size", len(data))
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Duration(l.RollupConfig.BlockTime)*time.Second)
 	defer cancel()
-	namespace := libshare.MustNewV0Namespace(l.DAClient.Namespace)
+	namespace, err := libshare.NewNamespaceFromBytes(l.DAClient.Namespace)
+	if err != nil {
+		return nil, err
+	}
 	b, err := blob.NewBlob(libshare.ShareVersionZero, namespace, data, nil)
 	if err != nil {
 		return nil, err
 	}
-	height, err := l.DAClient.Client.Blob.Submit(ctx, []*blob.Blob{b}, nil)
-	cancel()
+	height, err := l.DAClient.Client.Blob.Submit(ctx, []*blob.Blob{b}, state.NewTxConfig(state.WithGasPrice(l.DAClient.GasPrice)))
 	if err != nil {
 		return nil, err
 	}
