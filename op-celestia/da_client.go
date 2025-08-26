@@ -31,11 +31,12 @@ func SplitID(id []byte) (uint64, []byte) {
 }
 
 type DAClient struct {
-	Client       *client.Client
-	GetTimeout   time.Duration
-	Namespace    []byte
-	FallbackMode string
-	GasPrice     float64
+	Client        *client.Client
+	GetTimeout    time.Duration
+	SubmitTimeout time.Duration
+	Namespace     []byte
+	FallbackMode  string
+	GasPrice      float64
 }
 
 func NewDAClient(rpc, token, namespace, fallbackMode string, gasPrice float64) (*DAClient, error) {
@@ -51,10 +52,11 @@ func NewDAClient(rpc, token, namespace, fallbackMode string, gasPrice float64) (
 		return nil, fmt.Errorf("celestia: unknown fallback mode: %s", fallbackMode)
 	}
 	return &DAClient{
-		Client:       client,
-		GetTimeout:   time.Minute,
-		Namespace:    ns,
-		FallbackMode: fallbackMode,
-		GasPrice:     gasPrice,
+		Client:        client,
+		GetTimeout:    time.Minute,
+		SubmitTimeout: time.Minute,
+		Namespace:     ns,
+		FallbackMode:  fallbackMode,
+		GasPrice:      gasPrice,
 	}, nil
 }

@@ -996,7 +996,7 @@ func (l *BatchSubmitter) sendTransaction(txdata txData, queue *txmgr.Queue[txRef
 		if nf := len(txdata.frames); nf > l.ChannelConfig.ChannelConfig(isPectra, isThrottling).TargetNumFrames {
 			l.Log.Crit("Unexpected number of frames in calldata tx", "num_frames", nf)
 		}
-		candidate, err = l.celestiaTxCandidate(txdata.CallData())
+		candidate, err = l.celestiaTxCandidate(l.shutdownCtx, txdata.CallData())
 		if err != nil {
 			l.Log.Error("celestia: blob submission failed", "err", err)
 			candidate, err = l.fallbackTxCandidate(txdata)
@@ -1077,9 +1077,9 @@ func (l *BatchSubmitter) calldataTxCandidate(data []byte) *txmgr.TxCandidate {
 	}
 }
 
-func (l *BatchSubmitter) celestiaTxCandidate(data []byte) (*txmgr.TxCandidate, error) {
+func (l *BatchSubmitter) celestiaTxCandidate(ctx context.Context, data []byte) (*txmgr.TxCandidate, error) {
 	l.Log.Info("Building Celestia transaction candidate", "size", len(data))
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Duration(l.RollupConfig.BlockTime)*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, l.DAClient.SubmitTimeout)
 	defer cancel()
 	namespace, err := libshare.NewNamespaceFromBytes(l.DAClient.Namespace)
 	if err != nil {
