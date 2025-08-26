@@ -1093,6 +1093,37 @@ func (l *BatchSubmitter) celestiaTxCandidate(ctx context.Context, data []byte) (
 	if err != nil {
 		return nil, err
 	}
+
+	l.Log.Info("celestia: verifying that commitment is included after submission", "comm", b.Commitment)
+	// This is not an infinite loop. It exits when ctx is canceled or times out.
+	for {
+		select {
+		case <-time.After(time.Second):
+			// Retry after 1 second
+		case <-ctx.Done():
+			return nil, fmt.Errorf("celestia: gave up while waiting for the submitted blob to be available: %w", ctx.Err())
+		}
+
+		proof, err := l.DAClient.Client.Blob.GetProof(ctx, height, namespace, b.Commitment)
+		if err != nil {
+			l.Log.Warn("celestia: cannot get proof", "err", err)
+			continue
+		}
+
+		included, err := l.DAClient.Client.Blob.Included(ctx, height, namespace, proof, b.Commitment)
+		if err != nil {
+			l.Log.Warn("celestia: cannot check if blob is included", "err", err)
+			continue
+		}
+
+		if !included {
+			l.Log.Warn("celestia: blob is not included")
+			continue
+		}
+
+		break
+	}
+
 	id := celestia.MakeID(height, b.Commitment)
 	l.Log.Info("celestia: blob successfully submitted", "id", hex.EncodeToString(id))
 	data = append([]byte{celestia.DerivationVersionCelestia}, id...)
