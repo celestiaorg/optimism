@@ -345,7 +345,7 @@ func (da *driverAdapter) GetDALocation(l2BlockNum uint64) (store.DALocation, err
 	return da.driver.GetDALocation(l2BlockNum)
 }
 
-func (da *driverAdapter) GetStatus() (lastIndexedBlock uint64, indexedBlocks int, running bool, err error) {
+func (da *driverAdapter) GetStatus() (lastIndexedBlock uint64, indexedBlocks int, running bool, l2Start uint64, l2End uint64, err error) {
 	return da.driver.GetStatus()
 }
 

@@ -126,6 +126,35 @@ func (s *MemoryStore) GetIndexedBlockCount() (int, error) {
 	return len(s.l2BlockDAType), nil
 }
 
+// GetL2BlockRange returns the minimum and maximum L2 block numbers indexed
+func (s *MemoryStore) GetL2BlockRange() (min uint64, max uint64, err error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if len(s.l2BlockDAType) == 0 {
+		return 0, 0, nil
+	}
+
+	// Find min and max L2 block numbers
+	first := true
+	for blockNum := range s.l2BlockDAType {
+		if first {
+			min = blockNum
+			max = blockNum
+			first = false
+		} else {
+			if blockNum < min {
+				min = blockNum
+			}
+			if blockNum > max {
+				max = blockNum
+			}
+		}
+	}
+
+	return min, max, nil
+}
+
 // Clear removes all stored data (useful for testing)
 func (s *MemoryStore) Clear() error {
 	s.mu.Lock()

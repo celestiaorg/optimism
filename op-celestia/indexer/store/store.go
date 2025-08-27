@@ -21,6 +21,9 @@ type Store interface {
 	// GetIndexedBlockCount returns the number of indexed L2 blocks
 	GetIndexedBlockCount() (int, error)
 
+	// GetL2BlockRange returns the minimum and maximum L2 block numbers indexed
+	GetL2BlockRange() (min uint64, max uint64, err error)
+
 	// Clear removes all stored data
 	Clear() error
 

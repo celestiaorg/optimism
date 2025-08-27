@@ -120,20 +120,25 @@ func (d *IndexerDriver) GetDALocation(l2BlockNum uint64) (store.DALocation, erro
 }
 
 // GetStatus returns the current status of the indexer
-func (d *IndexerDriver) GetStatus() (lastIndexedBlock uint64, indexedBlocks int, running bool, err error) {
+func (d *IndexerDriver) GetStatus() (lastIndexedBlock uint64, indexedBlocks int, running bool, l2Start uint64, l2End uint64, err error) {
 	lastIndexedBlock, err = d.Store.GetLastIndexedBlock()
 	if err != nil {
-		return 0, 0, false, fmt.Errorf("failed to get last indexed block: %w", err)
+		return 0, 0, false, 0, 0, fmt.Errorf("failed to get last indexed block: %w", err)
 	}
 
 	indexedBlocks, err = d.Store.GetIndexedBlockCount()
 	if err != nil {
-		return lastIndexedBlock, 0, false, fmt.Errorf("failed to get indexed block count: %w", err)
+		return lastIndexedBlock, 0, false, 0, 0, fmt.Errorf("failed to get indexed block count: %w", err)
+	}
+
+	l2Start, l2End, err = d.Store.GetL2BlockRange()
+	if err != nil {
+		return lastIndexedBlock, indexedBlocks, false, 0, 0, fmt.Errorf("failed to get L2 block range: %w", err)
 	}
 
 	running = d.running.Load()
 
-	return lastIndexedBlock, indexedBlocks, running, nil
+	return lastIndexedBlock, indexedBlocks, running, l2Start, l2End, nil
 }
 
 // indexingLoop is the main loop that performs indexing operations

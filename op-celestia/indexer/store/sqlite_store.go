@@ -337,6 +337,29 @@ func (s *SqliteStore) GetIndexedBlockCount() (int, error) {
 	return count, err
 }
 
+// GetL2BlockRange returns the minimum and maximum L2 block numbers indexed
+func (s *SqliteStore) GetL2BlockRange() (min uint64, max uint64, err error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	err = s.db.QueryRow(`
+		SELECT MIN(l2_block_num), MAX(l2_block_num) FROM l2_block_mappings
+	`).Scan(&min, &max)
+	
+	// Handle case where there are no blocks indexed
+	if err != nil {
+		// Check if it's because the table is empty
+		var count int
+		countErr := s.db.QueryRow(`SELECT COUNT(*) FROM l2_block_mappings`).Scan(&count)
+		if countErr == nil && count == 0 {
+			return 0, 0, nil
+		}
+		return 0, 0, err
+	}
+	
+	return min, max, nil
+}
+
 // Clear removes all stored data (useful for testing)
 func (s *SqliteStore) Clear() error {
 	s.mu.Lock()

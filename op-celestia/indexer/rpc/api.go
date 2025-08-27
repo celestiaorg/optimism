@@ -18,7 +18,7 @@ type IndexerAPI struct {
 // IndexerDriver interface for the indexer operations
 type IndexerDriver interface {
 	GetDALocation(l2BlockNum uint64) (store.DALocation, error)
-	GetStatus() (lastIndexedBlock uint64, indexedBlocks int, running bool, err error)
+	GetStatus() (lastIndexedBlock uint64, indexedBlocks int, running bool, l2Start uint64, l2End uint64, err error)
 }
 
 // NewIndexerAPI creates a new IndexerAPI instance
@@ -48,13 +48,15 @@ type IndexerStatusResponse struct {
 	LastIndexedBlock uint64 `json:"last_indexed_block"`
 	IndexedBlocks    int    `json:"indexed_blocks"`
 	Running          bool   `json:"running"`
+	L2StartBlock     uint64 `json:"l2_start_block"`
+	L2EndBlock       uint64 `json:"l2_end_block"`
 }
 
 // GetIndexerStatus returns the current indexer status
 func (api *IndexerAPI) GetIndexerStatus(ctx context.Context) (*IndexerStatusResponse, error) {
 	api.log.Debug("GetIndexerStatus called")
 
-	lastIndexedBlock, indexedBlocks, running, err := api.driver.GetStatus()
+	lastIndexedBlock, indexedBlocks, running, l2Start, l2End, err := api.driver.GetStatus()
 	if err != nil {
 		api.log.Warn("Failed to get indexer status", "err", err)
 		return nil, fmt.Errorf("failed to get indexer status: %w", err)
@@ -64,12 +66,16 @@ func (api *IndexerAPI) GetIndexerStatus(ctx context.Context) (*IndexerStatusResp
 		LastIndexedBlock: lastIndexedBlock,
 		IndexedBlocks:    indexedBlocks,
 		Running:          running,
+		L2StartBlock:     l2Start,
+		L2EndBlock:       l2End,
 	}
 
 	api.log.Debug("GetIndexerStatus successful",
 		"last_indexed_block", lastIndexedBlock,
 		"indexed_blocks", indexedBlocks,
-		"running", running)
+		"running", running,
+		"l2_start_block", l2Start,
+		"l2_end_block", l2End)
 
 	return response, nil
 }
