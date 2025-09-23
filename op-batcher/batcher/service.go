@@ -461,7 +461,7 @@ func (bs *BatcherService) initDA(cfg *CLIConfig) error {
 		return nil
 	}
 
-	client, err := celestia.NewDAClient(cfg.DaConfig.Rpc, cfg.DaConfig.AuthToken, cfg.DaConfig.Namespace, cfg.DaConfig.FallbackMode, cfg.DaConfig.GasPrice)
+	client, err := celestia.NewDAClient(cfg.DaConfig.CelestiaConfig())
 	if err != nil {
 		return err
 	}

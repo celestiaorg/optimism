@@ -20,7 +20,7 @@ func SetDAClient(cfg celestia.CLIConfig) error {
 	if !cfg.IsEnabled() {
 		return derive.SetCelestiaDA(nil)
 	}
-	client, err := celestia.NewDAClient(cfg.Rpc, cfg.AuthToken, cfg.Namespace, cfg.FallbackMode, cfg.GasPrice)
+	client, err := celestia.NewDAClient(cfg.CelestiaConfig())
 	if err != nil {
 		return err
 	}

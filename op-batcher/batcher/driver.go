@@ -1089,7 +1089,7 @@ func (l *BatchSubmitter) celestiaTxCandidate(ctx context.Context, data []byte) (
 	if err != nil {
 		return nil, err
 	}
-	height, err := l.DAClient.Client.Blob.Submit(ctx, []*blob.Blob{b}, state.NewTxConfig(state.WithGasPrice(l.DAClient.GasPrice)))
+	height, err := l.DAClient.Client.Submit(ctx, []*blob.Blob{b}, state.NewTxConfig(state.WithGasPrice(l.DAClient.GasPrice)))
 	if err != nil {
 		return nil, err
 	}

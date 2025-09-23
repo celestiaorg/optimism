@@ -3,11 +3,16 @@ package celestia
 import (
 	"context"
 	"encoding/binary"
-	"encoding/hex"
 	"fmt"
 	"time"
 
+	txClient "github.com/celestiaorg/celestia-node/api/client"
 	"github.com/celestiaorg/celestia-node/api/rpc/client"
+	blobAPI "github.com/celestiaorg/celestia-node/nodebuilder/blob"
+	"github.com/celestiaorg/celestia-node/nodebuilder/p2p"
+	libshare "github.com/celestiaorg/go-square/v2/share"
+	"github.com/cosmos/cosmos-sdk/crypto/keyring"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // heightLen is a length (in bytes) of serialized height.
@@ -30,8 +35,27 @@ func SplitID(id []byte) (uint64, []byte) {
 	return binary.LittleEndian.Uint64(id[:heightLen]), commitment
 }
 
+type TxClientConfig struct {
+	DefaultKeyName     string
+	KeyringPath        string
+	CoreGRPCAddr       string
+	CoreGRPCTLSEnabled bool
+	CoreGRPCAuthToken  string
+	P2PNetwork         string
+}
+
+type RPCClientConfig struct {
+	URL            string
+	TLSEnabled     bool
+	AuthToken      string
+	Namespace      []byte
+	FallbackMode   string
+	GasPrice       float64
+	TxClientConfig *TxClientConfig
+}
+
 type DAClient struct {
-	Client        *client.Client
+	Client        blobAPI.Module
 	GetTimeout    time.Duration
 	SubmitTimeout time.Duration
 	Namespace     []byte
@@ -39,24 +63,75 @@ type DAClient struct {
 	GasPrice      float64
 }
 
-func NewDAClient(rpc, token, namespace, fallbackMode string, gasPrice float64) (*DAClient, error) {
-	client, err := client.NewClient(context.Background(), rpc, token)
-	if err != nil {
-		return nil, err
+// initTxClient initializes a transaction client for Celestia.
+func initTxClient(cfg RPCClientConfig) (blobAPI.Module, error) {
+	keyname := cfg.TxClientConfig.DefaultKeyName
+	if keyname == "" {
+		keyname = "my_celes_key"
 	}
-	ns, err := hex.DecodeString(namespace)
+	kr, err := txClient.KeyringWithNewKey(txClient.KeyringConfig{
+		KeyName:     keyname,
+		BackendName: keyring.BackendTest,
+	}, cfg.TxClientConfig.KeyringPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create keyring: %w", err)
 	}
-	if fallbackMode != "disabled" && fallbackMode != "blobdata" && fallbackMode != "calldata" {
-		return nil, fmt.Errorf("celestia: unknown fallback mode: %s", fallbackMode)
+
+	// Configure client
+	config := txClient.Config{
+		ReadConfig: txClient.ReadConfig{
+			BridgeDAAddr: cfg.URL,
+			DAAuthToken:  cfg.AuthToken,
+			EnableDATLS:  cfg.TLSEnabled,
+		},
+		SubmitConfig: txClient.SubmitConfig{
+			DefaultKeyName: cfg.TxClientConfig.DefaultKeyName,
+			Network:        p2p.Network(cfg.TxClientConfig.P2PNetwork),
+			CoreGRPCConfig: txClient.CoreGRPCConfig{
+				Addr:       cfg.TxClientConfig.CoreGRPCAddr,
+				TLSEnabled: cfg.TxClientConfig.CoreGRPCTLSEnabled,
+				AuthToken:  cfg.TxClientConfig.CoreGRPCAuthToken,
+			},
+		},
+	}
+	ctx := context.Background()
+	celestiaClient, err := txClient.New(ctx, config, kr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tx client: %w", err)
+	}
+	return celestiaClient.Blob, nil
+}
+
+// initRPCClient initializes an RPC client for Celestia.
+func initRPCClient(cfg RPCClientConfig) (blobAPI.Module, error) {
+	celestiaClient, err := client.NewClient(context.Background(), cfg.URL, cfg.AuthToken)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create rpc client: %w", err)
+	}
+	return &celestiaClient.Blob, nil
+}
+
+func NewDAClient(cfg RPCClientConfig) (*DAClient, error) {
+	var blobClient blobAPI.Module
+	var err error
+	if cfg.TxClientConfig != nil {
+		blobClient, err = initTxClient(cfg)
+	} else {
+		blobClient, err = initRPCClient(cfg)
+	}
+	if err != nil {
+		log.Crit("failed to initialize celestia client", "err", err)
+	}
+	_, err = libshare.NewNamespaceFromBytes(cfg.Namespace)
+	if err != nil {
+		log.Crit("failed to parse namespace", "err", err)
 	}
 	return &DAClient{
-		Client:        client,
+		Client:        blobClient,
 		GetTimeout:    time.Minute,
 		SubmitTimeout: time.Minute,
-		Namespace:     ns,
-		FallbackMode:  fallbackMode,
-		GasPrice:      gasPrice,
+		Namespace:     cfg.Namespace,
+		FallbackMode:  cfg.FallbackMode,
+		GasPrice:      cfg.GasPrice,
 	}, nil
 }

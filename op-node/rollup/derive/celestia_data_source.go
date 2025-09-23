@@ -61,7 +61,7 @@ func (s *CelestiaDataSource) Next(ctx context.Context) (eth.Data, error) {
 	if err != nil {
 		return nil, err
 	}
-	blob, err := daClient.Client.Blob.Get(ctx, height, namespace, commitment)
+	blob, err := daClient.Client.Get(ctx, height, namespace, commitment)
 	if err != nil {
 		// return temporary error so we can keep retrying.
 		return nil, NewTemporaryError(fmt.Errorf("celestia: failed to resolve frame: %w", err))
