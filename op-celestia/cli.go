@@ -26,6 +26,8 @@ const (
 const (
 	// RPCFlagName defines the flag for the rpc url
 	RPCFlagName = "da.rpc"
+	// TLSEnabledFlagName defines the flag for whether rpc TLS is enabled
+	TLSEnabledFlagName = "da.tls-enabled"
 	// AuthTokenFlagName defines the flag for the auth token
 	AuthTokenFlagName = "da.auth_token"
 	// NamespaceFlagName defines the flag for the namespace
@@ -62,6 +64,12 @@ func CLIFlags(envPrefix string) []cli.Flag {
 			Usage:   "dial address of the data availability rpc client; supports grpc, http, https",
 			Value:   defaultRPC,
 			EnvVars: opservice.PrefixEnvVar(envPrefix, "DA_RPC"),
+		},
+		&cli.BoolFlag{
+			Name:    TLSEnabledFlagName,
+			Usage:   "enable TLS for the data availability rpc client",
+			EnvVars: opservice.PrefixEnvVar(envPrefix, "DA_TLS_ENABLED"),
+			Value:   true,
 		},
 		&cli.StringFlag{
 			Name:    AuthTokenFlagName,
@@ -143,6 +151,7 @@ func CLIFlags(envPrefix string) []cli.Flag {
 
 type CLIConfig struct {
 	Rpc            string
+	TLSEnabled     bool
 	AuthToken      string
 	Namespace      string
 	FallbackMode   string
@@ -166,6 +175,7 @@ func (c CLIConfig) CelestiaConfig() RPCClientConfig {
 	}
 	return RPCClientConfig{
 		URL:            c.Rpc,
+		TLSEnabled:     c.TLSEnabled,
 		AuthToken:      c.AuthToken,
 		Namespace:      ns,
 		TxClientConfig: cfg,
@@ -209,6 +219,7 @@ func NewCLIConfig() CLIConfig {
 func ReadCLIConfig(ctx *cli.Context) CLIConfig {
 	return CLIConfig{
 		Rpc:          ctx.String(RPCFlagName),
+		TLSEnabled:   ctx.Bool(TLSEnabledFlagName),
 		AuthToken:    ctx.String(AuthTokenFlagName),
 		Namespace:    ctx.String(NamespaceFlagName),
 		FallbackMode: ctx.String(FallbackModeFlagName),
