@@ -10,7 +10,7 @@ import (
 	"github.com/celestiaorg/celestia-node/api/rpc/client"
 	blobAPI "github.com/celestiaorg/celestia-node/nodebuilder/blob"
 	"github.com/celestiaorg/celestia-node/nodebuilder/p2p"
-	libshare "github.com/celestiaorg/go-square/v2/share"
+	libshare "github.com/celestiaorg/go-square/v3/share"
 	"github.com/cosmos/cosmos-sdk/crypto/keyring"
 	"github.com/ethereum/go-ethereum/log"
 )
