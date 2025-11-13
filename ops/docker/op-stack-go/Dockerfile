@@ -57,9 +57,10 @@ EOF
 RUN forge --version
 
 # We may be cross-building for another platform. Specify which platform we need as builder.
-FROM --platform=$BUILDPLATFORM golang:1.23.8-alpine3.21 AS builder
+FROM --platform=$BUILDPLATFORM golang:1.24.6-alpine3.22 AS builder
 
-RUN apk add --no-cache curl tar gzip make gcc musl-dev linux-headers git jq yq-go bash just
+RUN apk update && \
+  apk add --no-cache curl tar gzip make gcc musl-dev linux-headers git jq yq-go bash just
 
 ARG TARGETARCH
 
