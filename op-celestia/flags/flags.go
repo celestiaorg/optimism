@@ -34,8 +34,13 @@ var (
 	}
 	L1EthRpcFlag = &cli.StringFlag{
 		Name:    "l1-eth-rpc",
-		Usage:   "HTTP provider URL for L1 (for reading batch inbox)",
+		Usage:   "HTTP provider URL for L1 execution client (for reading batch inbox, calldata DA)",
 		EnvVars: prefixEnvVars("L1_ETH_RPC"),
+	}
+	L1BeaconRpcFlag = &cli.StringFlag{
+		Name:    "l1-beacon-rpc",
+		Usage:   "HTTP provider for L1 consensus (beacon) client (required for EIP-4844 blob DA)",
+		EnvVars: prefixEnvVars("L1_BEACON_RPC"),
 	}
 	L2EthRpcFlag = &cli.StringFlag{
 		Name:    "l2-eth-rpc",
@@ -97,6 +102,7 @@ var requiredFlags = []cli.Flag{
 	StartL1BlockFlag,
 	BatchInboxAddressFlag,
 	L1EthRpcFlag,
+	L1BeaconRpcFlag,
 	L2EthRpcFlag,
 	OpNodeRpcFlag,
 }

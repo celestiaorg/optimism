@@ -21,6 +21,7 @@ import (
 	"github.com/ethereum-optimism/optimism/op-service/eth"
 	"github.com/ethereum-optimism/optimism/op-service/sources"
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 )
@@ -30,11 +31,18 @@ var (
 	ErrBlockNotFound     = errors.New("L2 block not found in index")
 )
 
-// L1Client interface for L1 operations
+// L1Client wraps both Ethereum's EL (execution, calldata DA) and CL (beacon, EIP4844 DA) clients
 type L1Client interface {
+	// execution
 	BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error)
 	HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error)
 	FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error)
+
+	// consensus / blobs (EIP-4844)
+	GetBlobs(ctx context.Context, ref eth.L1BlockRef, hashes []eth.IndexedBlobHash) ([]*eth.Blob, error)
+
+	// lifecycle
+	Close()
 }
 
 // OpNodeClient interface for op-node operations (optional)
@@ -264,9 +272,22 @@ func (d *IndexerDriver) indexL1Block(blockNum uint64) error {
 }
 
 // processBatchTransaction processes a transaction to the batch inbox
+// processBatchTransaction processes a transaction to the batch inbox
 func (d *IndexerDriver) processBatchTransaction(tx *types.Transaction, blockNum uint64) error {
+	// First: EIP-4844 blob batches.
+	// Blob txs can have empty calldata, so we must not early-return on len(tx.Data()) == 0.
+	if d.L1Client != nil {
+		blobHashes := tx.BlobHashes()
+		if len(blobHashes) > 0 {
+			d.Log.Debug("Found ETH blob DA batch", "tx", tx.Hash(), "l1_block", blockNum, "blob_count", len(blobHashes))
+			return d.processBlobDABatch(tx, blockNum, blobHashes)
+		}
+	}
+
+	// Fallback to existing calldata / Celestia paths
 	data := tx.Data()
 	if len(data) == 0 {
+		// No calldata and no blobs => nothing to index
 		return nil
 	}
 
@@ -542,6 +563,114 @@ func (d *IndexerDriver) verifyWithOpNode(l2BlockNum uint64) error {
 		"l2_block", l2BlockNum,
 		"block_hash", output.BlockRef.Hash,
 		"output_root", output.OutputRoot)
+
+	return nil
+}
+
+// processBlobDABatch processes ETH DA batches that use EIP-4844 blobs instead of calldata.
+func (d *IndexerDriver) processBlobDABatch(tx *types.Transaction, blockNum uint64, blobHashes []common.Hash) error {
+	if d.L1Client == nil {
+		return fmt.Errorf("blob batch encountered but no L1 client configured")
+	}
+
+	ctx, cancel := context.WithTimeout(d.ctx, d.Cfg.NetworkTimeout)
+	defer cancel()
+
+	// Build indexed blob hashes, preserving order
+	indexed := make([]eth.IndexedBlobHash, 0, len(blobHashes))
+	for i, h := range blobHashes {
+		indexed = append(indexed, eth.IndexedBlobHash{
+			Index: uint64(i),
+			Hash:  h,
+		})
+	}
+
+	// Get the L1 header so we can construct an L1BlockRef for this block.
+	header, err := d.L1Client.HeaderByNumber(ctx, big.NewInt(int64(blockNum)))
+	if err != nil {
+		return fmt.Errorf("failed to get L1 header for blob batch: %w", err)
+	}
+
+	ref := eth.L1BlockRef{
+		Hash:       header.Hash(),
+		Number:     header.Number.Uint64(),
+		ParentHash: header.ParentHash,
+		Time:       header.Time,
+	}
+
+	// Fetch blobs via the L1Client (this wraps the beacon client under the hood).
+	blobs, err := d.L1Client.GetBlobs(ctx, ref, indexed)
+	if err != nil {
+		return fmt.Errorf("failed to fetch blobs for tx %s: %w", tx.Hash(), err)
+	}
+	if len(blobs) == 0 {
+		return fmt.Errorf("no blobs returned for tx %s", tx.Hash())
+	}
+
+	// Decode blobs into contiguous frame data
+	var buf bytes.Buffer
+	for i, b := range blobs {
+		if b == nil {
+			continue
+		}
+		data, err := b.ToData()
+		if err != nil {
+			d.Log.Warn("Failed to decode blob data", "tx", tx.Hash(), "blob_index", i, "err", err)
+			continue
+		}
+		if len(data) == 0 {
+			continue
+		}
+		if _, err := buf.Write(data); err != nil {
+			return fmt.Errorf("failed to concatenate blob data: %w", err)
+		}
+	}
+
+	frameData := buf.Bytes()
+	if len(frameData) == 0 {
+		return fmt.Errorf("empty blob frame data for tx %s", tx.Hash())
+	}
+
+	// Parse frames from stitched blob data
+	frames, err := derive.ParseFrames(frameData)
+	if err != nil {
+		return fmt.Errorf("failed to parse frames from blob data: %w", err)
+	}
+	if len(frames) == 0 {
+		return fmt.Errorf("no frames found in blob data for tx %s", tx.Hash())
+	}
+
+	// Extract L2 block range from frames
+	l2Range, err := d.extractL2Range(frames)
+	if err != nil {
+		return fmt.Errorf("failed to extract L2 range from blob DA: %w", err)
+	}
+
+	// Store the ETH DA location same as calldata-based batches.
+	location := &store.EthereumLocation{
+		TxHash:  tx.Hash().Hex(),
+		L2Range: *l2Range,
+		L1Block: blockNum,
+	}
+
+	if err := d.Store.StoreEthLocation(location); err != nil {
+		return fmt.Errorf("failed to store blob ETH DA location: %w", err)
+	}
+	d.Metr.RecordLocationStored(location.L2Range.Start, location.L2Range.End)
+
+	d.Log.Info("Stored blob ETH DA location",
+		"tx_hash", location.TxHash,
+		"l2_start", l2Range.Start,
+		"l2_end", l2Range.End,
+		"l1_block", blockNum,
+		"blob_count", len(blobs),
+	)
+
+	if d.OpNodeClient != nil {
+		if err := d.verifyWithOpNode(l2Range.Start); err != nil {
+			d.Log.Warn("Verification with op-node failed", "err", err, "l2_block", l2Range.Start)
+		}
+	}
 
 	return nil
 }

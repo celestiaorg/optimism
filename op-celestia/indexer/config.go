@@ -28,8 +28,13 @@ type CLIConfig struct {
 	// BatchInboxAddress is the address of the batch inbox contract
 	BatchInboxAddress string
 
-	// L1EthRpc is the HTTP provider URL for L1
+	// L1EthRpc is the HTTP provider URL for L1 *execution* client
+	// (required for calldata DA)
 	L1EthRpc string
+
+	// L1BeaconRpc is the HTTP endpoint of the L1 *consensus* (AKA beacon) client
+	// (required for EIP4844 blob DA)
+	L1BeaconRpc string
 
 	// L2EthRpc is the HTTP provider URL for L2
 	L2EthRpc string

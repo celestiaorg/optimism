@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/big"
 	"sync/atomic"
 
 	celestia "github.com/ethereum-optimism/optimism/op-celestia"
@@ -22,7 +23,9 @@ import (
 	"github.com/ethereum-optimism/optimism/op-service/oppprof"
 	oprpc "github.com/ethereum-optimism/optimism/op-service/rpc"
 	"github.com/ethereum-optimism/optimism/op-service/sources"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/urfave/cli/v2"
@@ -37,7 +40,7 @@ type IndexerService struct {
 
 	IndexerConfig
 
-	L1Client       *ethclient.Client
+	L1Client       L1Client
 	L2Client       *sources.L2Client
 	OpNodeClient   dial.RollupClientInterface // optional
 	CelestiaClient *celestia.DAClient
@@ -119,12 +122,33 @@ func (is *IndexerService) initIndexerConfig(cfg *CLIConfig) {
 }
 
 func (is *IndexerService) initClients(ctx context.Context, cfg *CLIConfig) error {
-	// Initialize L1 client
-	l1Client, err := dial.DialEthClientWithTimeout(ctx, dial.DefaultDialTimeout, is.Log, cfg.L1EthRpc)
+	// Initialize L1 execution client
+	elClient, err := dial.DialEthClientWithTimeout(ctx, dial.DefaultDialTimeout, is.Log, cfg.L1EthRpc)
 	if err != nil {
 		return fmt.Errorf("failed to dial L1 RPC: %w", err)
 	}
-	is.L1Client = l1Client
+
+	// Initialize optional L1 beacon client (for EIP-4844)
+	var beaconClient *sources.L1BeaconClient
+	if cfg.L1BeaconRpc != "" {
+		httpCl := client.NewBasicHTTPClient(cfg.L1BeaconRpc, is.Log)
+		beaconHTTP := sources.NewBeaconHTTPClient(httpCl)
+		beaconCfg := sources.L1BeaconClientConfig{
+			FetchAllSidecars: true,
+		}
+		beaconClient = sources.NewL1BeaconClient(beaconHTTP, beaconCfg)
+		is.Log.Info("Initialized L1 beacon client", "url", cfg.L1BeaconRpc)
+	} else {
+		is.Log.Info("No L1 beacon URL configured; EIP-4844 blob DA batches will not be indexed")
+	}
+
+	// Combine EL + CL into a single L1Client implementation
+	is.L1Client = &combinedL1Client{
+		el: elClient,
+		cl: beaconClient,
+	}
+
+	// --- rest of initClients stays the same ---
 
 	// Initialize op-node client
 	opNodeClient, err := dial.DialRollupClientWithTimeout(ctx, is.Log, cfg.OpNodeRpc)
@@ -324,6 +348,37 @@ func (is *IndexerService) Stop(ctx context.Context) error {
 // opNodeWrapper wraps the dial.RollupClientInterface to match our OpNodeClient interface
 type opNodeWrapper struct {
 	dial.RollupClientInterface
+}
+
+// combinedL1Client implements L1Client by wrapping EL and (optional) CL clients.
+type combinedL1Client struct {
+	el *ethclient.Client
+	cl *sources.L1BeaconClient
+}
+
+func (c *combinedL1Client) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
+	return c.el.BlockByNumber(ctx, number)
+}
+
+func (c *combinedL1Client) HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error) {
+	return c.el.HeaderByNumber(ctx, number)
+}
+
+func (c *combinedL1Client) FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error) {
+	return c.el.FilterLogs(ctx, query)
+}
+
+func (c *combinedL1Client) GetBlobs(ctx context.Context, ref eth.L1BlockRef, hashes []eth.IndexedBlobHash) ([]*eth.Blob, error) {
+	if c.cl == nil {
+		return nil, fmt.Errorf("blob DA not configured")
+	}
+	return c.cl.GetBlobs(ctx, ref, hashes)
+}
+
+func (c *combinedL1Client) Close() {
+	if c.el != nil {
+		c.el.Close()
+	}
 }
 
 func (w *opNodeWrapper) OutputAtBlock(ctx context.Context, blockNum uint64) (*eth.OutputResponse, error) {
