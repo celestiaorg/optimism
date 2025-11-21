@@ -272,10 +272,9 @@ func (d *IndexerDriver) indexL1Block(blockNum uint64) error {
 }
 
 // processBatchTransaction processes a transaction to the batch inbox
-// processBatchTransaction processes a transaction to the batch inbox
 func (d *IndexerDriver) processBatchTransaction(tx *types.Transaction, blockNum uint64) error {
-	// First: EIP-4844 blob batches.
-	// Blob txs can have empty calldata, so we must not early-return on len(tx.Data()) == 0.
+	// First check for EIP-4844 blob batches, we must ignore calldata if present.
+	// See https://specs.optimism.io/protocol/ecotone/derivation.html#ecotone-blob-retrieval
 	if d.L1Client != nil {
 		blobHashes := tx.BlobHashes()
 		if len(blobHashes) > 0 {
@@ -284,7 +283,7 @@ func (d *IndexerDriver) processBatchTransaction(tx *types.Transaction, blockNum 
 		}
 	}
 
-	// Fallback to existing calldata / Celestia paths
+	// Any calldata may be either frames (rollup) or Alt-DA commitment.
 	data := tx.Data()
 	if len(data) == 0 {
 		// No calldata and no blobs => nothing to index
@@ -292,37 +291,52 @@ func (d *IndexerDriver) processBatchTransaction(tx *types.Transaction, blockNum 
 	}
 
 	// Check version byte to determine DA type
+	// See https://specs.optimism.io/experimental/alt-da.html#input-commitment-submission
 	switch data[0] {
 	case 0x00:
+		// rollup (Ethereum DA). Calldata carries frames.
 		d.Log.Debug("Found ETH DA batch", "tx", tx.Hash(), "l1_block", blockNum)
 		return d.processEthDABatch(tx, blockNum)
 
 	case 0x01:
-		// Check if this is an OP Stack Celestia commitment
-		// Format: version_byte(0x01) + commitment_type(0x01) + da_layer_byte(0x0c) + payload
+		// Alt-DA commitment
 		if len(data) < 3 {
-			return nil // Not enough data
+			// We expect at least: version, commitment_type, da_layer
+			return fmt.Errorf("invalid Alt-DA commitment: too short (len=%d)", len(data))
 		}
 
-		if data[1] == 0x01 && data[2] == 0x0c {
-			// Commitment type and DA layer byte for Celestia
+		commitmentType := data[1]
+		daLayer := data[2]
+
+		// We ONLY support Celestia: commitment_type=0x01 (da-service) + da_layer=0x0c) (celestia)
+		if commitmentType == 0x01 && daLayer == 0x0c {
 			if len(data) < 43 { // 3 bytes header + 8 bytes height + 32 bytes commitment
 				return fmt.Errorf("invalid OP Stack Celestia commitment length: %d", len(data))
 			}
 
-			// Skip the 3-byte header to get the payload
+			// Skip the 3-byte header to get the payload: [height (8 bytes) || commitment (32 bytes)]
 			payload := data[3:]
 			height, commitmentBytes := celestia.SplitID(payload)
 			commitment := base64.StdEncoding.EncodeToString(commitmentBytes)
 
-			d.Log.Debug("Found OP Stack Celestia commitment", "height", height, "commitment", commitment, "tx", tx.Hash())
+			d.Log.Debug("Found OP Stack Celestia commitment",
+				"height", height,
+				"commitment", commitment,
+				"tx", tx.Hash(),
+				"l1_block", blockNum,
+			)
 
 			// Fetch and parse frames from Celestia
 			return d.processCelestiaFrames(payload, blockNum)
 		}
-	}
 
-	return nil
+		// Any other Alt-DA commitment is unsupported for this indexer.
+		return fmt.Errorf("unsupported Alt-DA commitment: commitment_type=0x%02x, da_layer=0x%02x", commitmentType, daLayer)
+
+	default:
+		// Unknown version byte — future format we explicitly don't handle.
+		return fmt.Errorf("unsupported batch tx version byte: 0x%02x", data[0])
+	}
 }
 
 // processCelestiaFrames fetches frames from Celestia and extracts L2 block ranges

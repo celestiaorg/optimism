@@ -148,8 +148,6 @@ func (is *IndexerService) initClients(ctx context.Context, cfg *CLIConfig) error
 		cl: beaconClient,
 	}
 
-	// --- rest of initClients stays the same ---
-
 	// Initialize op-node client
 	opNodeClient, err := dial.DialRollupClientWithTimeout(ctx, is.Log, cfg.OpNodeRpc)
 	if err != nil {
