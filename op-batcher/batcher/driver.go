@@ -189,15 +189,11 @@ func (l *BatchSubmitter) StartBatchSubmitting() error {
 		l.Log.Warn("Throttling loop is DISABLED due to 0 throttle-threshold. This should not be disabled in prod.")
 	}
 
-	l.wg.Add(4)
+	l.wg.Add(3)
 
-	txQueue := txmgr.NewQueue[txRef](l.killCtx, l.Txmgr, l.Config.MaxPendingTransactions)
-	commitmentsChannel := make(chan chan commitmentPayload, l.Config.MaxConcurrentDARequests)
-
-	go l.publishAltDACommitmentsToL1Loop(l.wg, txQueue, receiptsCh, commitmentsChannel)          // ranges over the commitmentsChannel and posts them to L1
-	go l.receiptsLoop(l.wg, receiptsCh)                                                          // ranges over receiptsCh channel
-	go l.publishingLoop(l.killCtx, l.wg, txQueue, receiptsCh, publishSignal, commitmentsChannel) // ranges over publishSignal, spawns routines which send on receiptsCh. Closes receiptsCh when done.
-	go l.blockLoadingLoop(l.shutdownCtx, l.wg, unsafeBytesUpdated, publishSignal)                // sends on unsafeBytesUpdated (if throttling enabled), and publishSignal. Closes them both when done
+	go l.receiptsLoop(l.wg, receiptsCh)                                           // ranges over receiptsCh channel
+	go l.publishingLoop(l.killCtx, l.wg, receiptsCh, publishSignal)               // ranges over publishSignal, spawns routines which send on receiptsCh. Closes receiptsCh when done.
+	go l.blockLoadingLoop(l.shutdownCtx, l.wg, unsafeBytesUpdated, publishSignal) // sends on unsafeBytesUpdated (if throttling enabled), and publishSignal. Closes them both when done
 
 	l.Log.Info("Batch Submitter started")
 	return nil
@@ -497,9 +493,8 @@ func (l *BatchSubmitter) syncAndPrune(syncStatus *eth.SyncStatus) *inclusiveBloc
 // -  waits for a signal that blocks have been loaded
 // -  drives the creation of channels and frames
 // -  sends transactions to the DA layer
-func (l *BatchSubmitter) publishingLoop(ctx context.Context, wg *sync.WaitGroup, txQueue *txmgr.Queue[txRef], receiptsCh chan txmgr.TxReceipt[txRef], publishSignal chan bool, commitmentsChannel chan chan commitmentPayload) {
+func (l *BatchSubmitter) publishingLoop(ctx context.Context, wg *sync.WaitGroup, receiptsCh chan txmgr.TxReceipt[txRef], publishSignal chan bool) {
 	defer close(receiptsCh)
-	defer close(commitmentsChannel)
 	defer wg.Done()
 
 	daGroup := &errgroup.Group{}
@@ -508,6 +503,13 @@ func (l *BatchSubmitter) publishingLoop(ctx context.Context, wg *sync.WaitGroup,
 	if l.Config.MaxConcurrentDARequests > 0 {
 		daGroup.SetLimit(int(l.Config.MaxConcurrentDARequests))
 	}
+
+	txQueue := txmgr.NewQueue[txRef](l.killCtx, l.Txmgr, l.Config.MaxPendingTransactions)
+
+	commitmentsChannel := make(chan chan commitmentPayload, l.Config.MaxConcurrentDARequests)
+	donePublishingCommitments := make(chan struct{})
+	// ranges over the commitmentsChannel and posts them to L1
+	go l.publishAltDACommitmentsToL1Loop(donePublishingCommitments, txQueue, receiptsCh, commitmentsChannel)
 
 	for forcePublish := range publishSignal {
 		l.Log.Debug("publishing loop received signal", "force_publish", forcePublish)
@@ -520,6 +522,11 @@ func (l *BatchSubmitter) publishingLoop(ctx context.Context, wg *sync.WaitGroup,
 			l.Log.Error("error waiting for DA requests to complete", "err", err)
 		}
 	}
+	// Close commitments channel when all alt-da requests have finished
+	close(commitmentsChannel)
+
+	// Wait for all alt-da commitments to be published to L1
+	<-donePublishingCommitments
 
 	// We _must_ wait for all senders on receiptsCh to finish before we can close it.
 	if err := txQueue.Wait(); err != nil {
@@ -970,8 +977,8 @@ func (l *BatchSubmitter) publishToAltDA(txdata txData, daGroup *errgroup.Group, 
 	commChannels <- altDaCommitmentChannel
 }
 
-func (l *BatchSubmitter) publishAltDACommitmentsToL1Loop(wg *sync.WaitGroup, queue *txmgr.Queue[txRef], receiptsCh chan txmgr.TxReceipt[txRef], commitmentsCh chan chan commitmentPayload) {
-	defer wg.Done()
+func (l *BatchSubmitter) publishAltDACommitmentsToL1Loop(done chan struct{}, queue *txmgr.Queue[txRef], receiptsCh chan txmgr.TxReceipt[txRef], commitmentsCh chan chan commitmentPayload) {
+	defer close(done)
 	for commitmentCh := range commitmentsCh {
 		for commData := range commitmentCh {
 			l.Log.Info("Processing and sending to l1", "commitment", commData.comm)
