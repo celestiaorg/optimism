@@ -190,7 +190,6 @@ func (l *BatchSubmitter) StartBatchSubmitting() error {
 	}
 
 	l.wg.Add(3)
-
 	go l.receiptsLoop(l.wg, receiptsCh)                                           // ranges over receiptsCh channel
 	go l.publishingLoop(l.killCtx, l.wg, receiptsCh, publishSignal)               // ranges over publishSignal, spawns routines which send on receiptsCh. Closes receiptsCh when done.
 	go l.blockLoadingLoop(l.shutdownCtx, l.wg, unsafeBytesUpdated, publishSignal) // sends on unsafeBytesUpdated (if throttling enabled), and publishSignal. Closes them both when done
@@ -503,8 +502,7 @@ func (l *BatchSubmitter) publishingLoop(ctx context.Context, wg *sync.WaitGroup,
 	if l.Config.MaxConcurrentDARequests > 0 {
 		daGroup.SetLimit(int(l.Config.MaxConcurrentDARequests))
 	}
-
-	txQueue := txmgr.NewQueue[txRef](l.killCtx, l.Txmgr, l.Config.MaxPendingTransactions)
+	txQueue := txmgr.NewQueue[txRef](ctx, l.Txmgr, l.Config.MaxPendingTransactions)
 
 	commitmentsChannel := make(chan chan commitmentPayload, l.Config.MaxConcurrentDARequests)
 	donePublishingCommitments := make(chan struct{})
