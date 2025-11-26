@@ -234,10 +234,17 @@ func TestBatchSubmitter_AltDACommitsSentInOrder(t *testing.T) {
 	txQueue := txmgr.NewQueue[txRef](context.Background(), txMgr, 0)
 	receiptsCh := make(chan txmgr.TxReceipt[txRef], 2)
 	commitmentsCh := make(chan chan commitmentPayload, bs.Config.MaxConcurrentDARequests)
+	commitmentsDone := make(chan struct{})
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go bs.publishAltDACommitmentsToL1Loop(&wg, txQueue, receiptsCh, commitmentsCh)
+	// Drain receipts to avoid blocking SendAsync and to mirror the driver lifecycle.
+	receiptsDone := make(chan struct{})
+	go func() {
+		for range receiptsCh {
+		}
+		close(receiptsDone)
+	}()
+
+	go bs.publishAltDACommitmentsToL1Loop(commitmentsDone, txQueue, receiptsCh, commitmentsCh)
 
 	daGroup := &errgroup.Group{}
 	daGroup.SetLimit(int(bs.Config.MaxConcurrentDARequests))
@@ -250,8 +257,10 @@ func TestBatchSubmitter_AltDACommitsSentInOrder(t *testing.T) {
 
 	require.NoError(t, daGroup.Wait())
 	close(commitmentsCh)
-	wg.Wait()
+	<-commitmentsDone
 	require.NoError(t, txQueue.Wait())
+	close(receiptsCh)
+	<-receiptsDone
 
 	mu.Lock()
 	defer mu.Unlock()
