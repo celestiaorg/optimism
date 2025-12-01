@@ -233,7 +233,7 @@ func TestBatchSubmitter_AltDACommitsSentInOrder(t *testing.T) {
 
 	txQueue := txmgr.NewQueue[txRef](context.Background(), txMgr, 0)
 	receiptsCh := make(chan txmgr.TxReceipt[txRef], 2)
-	commitmentsCh := make(chan chan commitmentPayload, bs.Config.MaxConcurrentDARequests)
+	commitmentsCh := make(chan commitmentPayloadChan, bs.Config.MaxConcurrentDARequests)
 	commitmentsDone := make(chan struct{})
 
 	// Drain receipts to avoid blocking SendAsync and to mirror the driver lifecycle.
