@@ -44,7 +44,7 @@ require (
 	github.com/ipfs/go-datastore v0.8.3
 	github.com/ipfs/go-ds-leveldb v0.5.0
 	github.com/klauspost/compress v1.18.0
-	github.com/kurtosis-tech/kurtosis/api/golang v1.8.2-0.20250602144112-2b7d06430e48
+	github.com/kurtosis-tech/kurtosis/api/golang v1.13.2
 	github.com/libp2p/go-libp2p v0.43.0
 	github.com/libp2p/go-libp2p-mplex v0.10.0
 	github.com/libp2p/go-libp2p-pubsub v0.14.0
