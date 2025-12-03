@@ -70,6 +70,18 @@ func (s *AltDADataSource) Next(ctx context.Context) (eth.Data, error) {
 		}
 		s.comm = comm
 	}
+
+	if s.comm.CommitmentType() == altda.FallbackCommitmentType {
+		if fb, ok := s.comm.(altda.FallbackCommitment); ok {
+			payload := make([]byte, len(fb))
+			copy(payload, fb)
+			s.comm = nil
+			return payload, nil
+		}
+		s.log.Warn("invalid fallback commitment", "comm", s.comm)
+		s.comm = nil
+		return nil, NotEnoughData
+	}
 	// use the commitment to fetch the input from the AltDA provider.
 	data, err := s.fetcher.GetInput(ctx, s.l1, s.comm, s.id)
 	// GetInput may call for a reorg if the pipeline is stalled and the AltDA manager

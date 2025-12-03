@@ -101,6 +101,12 @@ type CLIConfig struct {
 	// If using blobs, this setting is ignored and the max blob size is used.
 	MaxL1TxSize uint64
 
+	// MaxFrameSize is the maximum size of a frame in a batch tx.
+	MaxFrameSize uint64
+
+	// MultiFrameTxs controls whether to put all frames of a channel inside a single tx.
+	MultiFrameTxs bool
+
 	// Maximum number of blocks to add to a span batch. Default is 0 - no maximum.
 	MaxBlocksPerSpanBatch int
 
@@ -152,6 +158,7 @@ type CLIConfig struct {
 	PprofConfig   oppprof.CLIConfig
 	RPC           oprpc.CLIConfig
 	AltDA         altda.CLIConfig
+	AltDAFallback bool
 }
 
 func (c *CLIConfig) Check() error {
@@ -231,6 +238,8 @@ func NewConfig(ctx *cli.Context) *CLIConfig {
 		MaxPendingTransactions:       ctx.Uint64(flags.MaxPendingTransactionsFlag.Name),
 		MaxChannelDuration:           ctx.Uint64(flags.MaxChannelDurationFlag.Name),
 		MaxL1TxSize:                  ctx.Uint64(flags.MaxL1TxSizeBytesFlag.Name),
+		MaxFrameSize:                 ctx.Uint64(flags.MaxFrameSizeFlag.Name),
+		MultiFrameTxs:                ctx.Bool(flags.MultiFrameTxsFlag.Name),
 		MaxBlocksPerSpanBatch:        ctx.Int(flags.MaxBlocksPerSpanBatch.Name),
 		TargetNumFrames:              ctx.Int(flags.TargetNumFramesFlag.Name),
 		ApproxComprRatio:             ctx.Float64(flags.ApproxComprRatioFlag.Name),
@@ -248,6 +257,7 @@ func NewConfig(ctx *cli.Context) *CLIConfig {
 		PprofConfig:                  oppprof.ReadCLIConfig(ctx),
 		RPC:                          oprpc.ReadCLIConfig(ctx),
 		AltDA:                        altda.ReadCLIConfig(ctx),
+		AltDAFallback:                ctx.Bool(flags.AltDAFallbackCommitmentFlag.Name),
 		ThrottleConfig: ThrottleConfig{
 			AdditionalEndpoints: ctx.StringSlice(flags.AdditionalThrottlingEndpointsFlag.Name),
 			TxSizeLowerLimit:    ctx.Uint64(flags.ThrottleTxSizeLowerLimitFlag.Name),

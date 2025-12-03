@@ -78,6 +78,24 @@ var (
 		Value:   120_000, // will be overwritten to max for blob da-type
 		EnvVars: prefixEnvVars("MAX_L1_TX_SIZE_BYTES"),
 	}
+	MaxFrameSizeFlag = &cli.Uint64Flag{
+		Name:    "max-frame-size-bytes",
+		Usage:   "The maximum size of a frame. 0 to use default value (120k-1)",
+		Value:   0,
+		EnvVars: prefixEnvVars("MAX_FRAME_SIZE_BYTES"),
+	}
+	MultiFrameTxsFlag = &cli.BoolFlag{
+		Name:    "multi-frame-txs",
+		Usage:   "Whether to put all frames of a channel inside a single tx. Ignored for blobs, where true will be used.",
+		Value:   false,
+		EnvVars: prefixEnvVars("MULTI_FRAME_TXS"),
+	}
+	AltDAFallbackCommitmentFlag = &cli.BoolFlag{
+		Name:    "altda-fallback-commitment",
+		Usage:   "Enable fallback commitments that inline batch data when Alt-DA submissions fail.",
+		Value:   false,
+		EnvVars: prefixEnvVars("ALTDA_FALLBACK_COMMITMENT"),
+	}
 	MaxBlocksPerSpanBatch = &cli.IntFlag{
 		Name:    "max-blocks-per-span-batch",
 		Usage:   "Maximum number of blocks to add to a span batch. Default is 0 - no maximum.",
@@ -177,6 +195,9 @@ var optionalFlags = []cli.Flag{
 	MaxPendingTransactionsFlag,
 	MaxChannelDurationFlag,
 	MaxL1TxSizeBytesFlag,
+	MaxFrameSizeFlag,
+	MultiFrameTxsFlag,
+	AltDAFallbackCommitmentFlag,
 	MaxBlocksPerSpanBatch,
 	TargetNumFramesFlag,
 	ApproxComprRatioFlag,

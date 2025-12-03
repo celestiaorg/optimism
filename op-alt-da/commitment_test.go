@@ -68,3 +68,15 @@ func TestCommitmentData(t *testing.T) {
 		})
 	}
 }
+
+func TestFallbackCommitment(t *testing.T) {
+	data := []byte("fallback data payload")
+	comm := NewFallbackCommitment(data)
+	require.NotNil(t, comm)
+	decode, err := DecodeCommitmentData(comm.Encode())
+	require.NoError(t, err)
+	require.Equal(t, FallbackCommitmentType, decode.CommitmentType())
+	require.NoError(t, decode.Verify(data))
+	require.Equal(t, append([]byte{params.DerivationVersion1}, comm.Encode()...), decode.TxData())
+	require.ErrorIs(t, ErrCommitmentMismatch, decode.Verify([]byte("other")))
+}

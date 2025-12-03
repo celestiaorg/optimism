@@ -44,6 +44,7 @@ type BatcherConfig struct {
 	GenericDA bool
 	// maximum number of concurrent blob put requests to the DA server
 	MaxConcurrentDARequests uint64
+	AltDAFallback           bool
 
 	WaitNodeSync        bool
 	CheckRecentTxsDepth int
@@ -107,6 +108,7 @@ func (bs *BatcherService) initFromCLIConfig(ctx context.Context, version string,
 	bs.NetworkTimeout = cfg.TxMgrConfig.NetworkTimeout
 	bs.CheckRecentTxsDepth = cfg.CheckRecentTxsDepth
 	bs.WaitNodeSync = cfg.WaitNodeSync
+	bs.AltDAFallback = cfg.AltDAFallback
 
 	bs.ThrottleParams = config.ThrottleParams{
 		LowerThreshold:      cfg.ThrottleConfig.LowerThreshold,
@@ -270,6 +272,16 @@ func (bs *BatcherService) initChannelConfig(cfg *CLIConfig) error {
 		BatchType:             cfg.BatchType,
 	}
 
+	// override max frame size if set
+	if cfg.MaxFrameSize > 0 {
+		cc.MaxFrameSize = cfg.MaxFrameSize
+	}
+
+	// enable multi-frame txs if set
+	if cfg.MultiFrameTxs {
+		cc.MultiFrameTxs = true
+	}
+
 	switch cfg.DataAvailabilityType {
 	case flags.BlobsType, flags.AutoType:
 		if !cfg.TestUseMaxTxSizeForBlobs {
@@ -310,6 +322,7 @@ func (bs *BatcherService) initChannelConfig(cfg *CLIConfig) error {
 	bs.Log.Info("Initialized channel-config",
 		"da_type", cfg.DataAvailabilityType,
 		"use_alt_da", bs.UseAltDA,
+		"multi_frame_txs", cc.MultiFrameTxs,
 		"max_frame_size", cc.MaxFrameSize,
 		"target_num_frames", cc.TargetNumFrames,
 		"compressor", cc.CompressorConfig.Kind,

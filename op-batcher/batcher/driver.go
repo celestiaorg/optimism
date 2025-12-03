@@ -914,8 +914,8 @@ func (l *BatchSubmitter) cancelBlockingTx(queue *txmgr.Queue[txRef], receiptsCh 
 // publishToAltDAAndL1 posts the txdata to the DA Provider and then sends the commitment to L1.
 func (l *BatchSubmitter) publishToAltDAAndL1(txdata txData, queue *txmgr.Queue[txRef], receiptsCh chan txmgr.TxReceipt[txRef], daGroup *errgroup.Group) {
 	// sanity checks
-	if nf := len(txdata.frames); nf != 1 {
-		l.Log.Crit("Unexpected number of frames in calldata tx", "num_frames", nf)
+	if nf := len(txdata.frames); nf > l.ChannelConfig.TargetNumFrames {
+		l.Log.Crit("unexpected number of frames in calldata tx", "num_frames", nf)
 	}
 	if txdata.asBlob {
 		l.Log.Crit("Unexpected blob txdata with AltDA enabled")
@@ -934,6 +934,17 @@ func (l *BatchSubmitter) publishToAltDAAndL1(txdata txData, queue *txmgr.Queue[t
 			// and can happen after tests complete which causes a panic.
 			if errors.Is(err, context.Canceled) {
 				l.recordFailedDARequest(txdata.ID(), nil)
+			} else if l.Config.AltDAFallbackCommitment {
+				fallback := altda.NewFallbackCommitment(txdata.CallData())
+				if fallback == nil {
+					l.Log.Error("Failed to create fallback commitment", "tx", txdata.ID(), "size", len(txdata.CallData()))
+					l.recordFailedDARequest(txdata.ID(), err)
+					return nil
+				}
+				l.Log.Warn("AltDA submission failed; publishing fallback commitment", "tx", txdata.ID(), "err", err)
+				candidate := l.calldataTxCandidate(fallback.TxData())
+				l.sendTx(txdata, false, candidate, queue, receiptsCh)
+				return nil
 			} else {
 				l.Log.Error("Failed to post input to Alt DA", "error", err)
 				// requeue frame if we fail to post to the DA Provider so it can be retried

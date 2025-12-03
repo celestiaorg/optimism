@@ -25,6 +25,8 @@ func CommitmentTypeFromString(s string) (CommitmentType, error) {
 		return Keccak256CommitmentType, nil
 	case GenericCommitmentString:
 		return GenericCommitmentType, nil
+	case FallbackCommitmentString:
+		return FallbackCommitmentType, nil
 	default:
 		return 0, fmt.Errorf("invalid commitment type: %s", s)
 	}
@@ -34,10 +36,12 @@ func CommitmentTypeFromString(s string) (CommitmentType, error) {
 // KeccakCommitmentType is the default commitment type for the centralized DA storage.
 // GenericCommitmentType indicates an opaque bytestring that the op-node never opens.
 const (
-	Keccak256CommitmentType CommitmentType = 0
-	GenericCommitmentType   CommitmentType = 1
-	KeccakCommitmentString  string         = "KeccakCommitment"
-	GenericCommitmentString string         = "GenericCommitment"
+	Keccak256CommitmentType  CommitmentType = 0
+	GenericCommitmentType    CommitmentType = 1
+	FallbackCommitmentType   CommitmentType = 2
+	KeccakCommitmentString   string         = "KeccakCommitment"
+	GenericCommitmentString  string         = "GenericCommitment"
+	FallbackCommitmentString string         = "FallbackCommitment"
 )
 
 // CommitmentData is the binary representation of a commitment.
@@ -55,6 +59,9 @@ type Keccak256Commitment []byte
 // GenericCommitment is an implementation of CommitmentData that treats the commitment as an opaque bytestring.
 type GenericCommitment []byte
 
+// FallbackCommitment is an implementation of CommitmentData that inlines the original input data.
+type FallbackCommitment []byte
+
 // NewCommitmentData creates a new commitment from the given input and desired type.
 func NewCommitmentData(t CommitmentType, input []byte) CommitmentData {
 	switch t {
@@ -62,6 +69,8 @@ func NewCommitmentData(t CommitmentType, input []byte) CommitmentData {
 		return NewKeccak256Commitment(input)
 	case GenericCommitmentType:
 		return NewGenericCommitment(input)
+	case FallbackCommitmentType:
+		return NewFallbackCommitment(input)
 	default:
 		return nil
 	}
@@ -81,6 +90,8 @@ func DecodeCommitmentData(input []byte) (CommitmentData, error) {
 		return DecodeKeccak256(data)
 	case GenericCommitmentType:
 		return DecodeGenericCommitment(data)
+	case FallbackCommitmentType:
+		return DecodeFallbackCommitment(data)
 	default:
 		return nil, ErrInvalidCommitment
 	}
@@ -165,5 +176,52 @@ func (c GenericCommitment) Verify(input []byte) error {
 }
 
 func (c GenericCommitment) String() string {
+	return hex.EncodeToString(c.Encode())
+}
+
+// NewFallbackCommitment creates a new fallback commitment embedding the input data.
+func NewFallbackCommitment(input []byte) FallbackCommitment {
+	if len(input) == 0 || len(input) > MaxInputSize {
+		return nil
+	}
+	data := make([]byte, len(input))
+	copy(data, input)
+	return FallbackCommitment(data)
+}
+
+// DecodeFallbackCommitment validates and casts the commitment into a FallbackCommitment.
+func DecodeFallbackCommitment(commitment []byte) (FallbackCommitment, error) {
+	if len(commitment) == 0 || len(commitment) > MaxInputSize {
+		return nil, ErrInvalidCommitment
+	}
+	data := make([]byte, len(commitment))
+	copy(data, commitment)
+	return FallbackCommitment(data), nil
+}
+
+// CommitmentType returns the fallback commitment type.
+func (c FallbackCommitment) CommitmentType() CommitmentType {
+	return FallbackCommitmentType
+}
+
+// Encode adds a commitment type prefix describing the commitment.
+func (c FallbackCommitment) Encode() []byte {
+	return append([]byte{byte(FallbackCommitmentType)}, []byte(c)...)
+}
+
+// TxData adds an extra version byte to signal it's a commitment.
+func (c FallbackCommitment) TxData() []byte {
+	return append([]byte{params.DerivationVersion1}, c.Encode()...)
+}
+
+// Verify checks if the fallback commitment matches the provided input bytes.
+func (c FallbackCommitment) Verify(input []byte) error {
+	if !bytes.Equal(c, input) {
+		return ErrCommitmentMismatch
+	}
+	return nil
+}
+
+func (c FallbackCommitment) String() string {
 	return hex.EncodeToString(c.Encode())
 }

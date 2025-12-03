@@ -191,6 +191,14 @@ func (d *DA) Reset(ctx context.Context, base eth.L1BlockRef, baseCfg eth.SystemC
 // GetInput returns the input data for the given commitment bytes. blockNumber is required to lookup
 // the challenge status in the DataAvailabilityChallenge L1 contract.
 func (d *DA) GetInput(ctx context.Context, l1 L1Fetcher, comm CommitmentData, blockId eth.L1BlockRef) (eth.Data, error) {
+	if comm.CommitmentType() == FallbackCommitmentType {
+		if fb, ok := comm.(FallbackCommitment); ok {
+			data := make([]byte, len(fb))
+			copy(data, fb)
+			return data, nil
+		}
+		return nil, ErrInvalidCommitment
+	}
 	// If it's not the right commitment type, report it as an expired commitment in order to skip it
 	if d.cfg.CommitmentType != comm.CommitmentType() {
 		return nil, fmt.Errorf("invalid commitment type; expected: %v, got: %v: %w", d.cfg.CommitmentType, comm.CommitmentType(), ErrExpiredChallenge)
