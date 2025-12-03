@@ -50,24 +50,15 @@ func (s *StoreTestSuite) TestBasicOperations() {
 	require.Equal(t, 6, blockCount) // 354-359 inclusive
 
 	// Test retrieving location
-	retrievedLocation, err := s.store.GetLocation(355)
+	retrievedLocation, err := s.store.GetDALocation(355)
 	require.NoError(t, err)
 	require.NotNil(t, retrievedLocation)
 	require.Equal(t, location, retrievedLocation)
 
 	// Test non-existent block
-	_, err = s.store.GetLocation(1000)
+	_, err = s.store.GetDALocation(1000)
 	require.Error(t, err)
 
-	// Test retrieving by commitment
-	retrievedLocation, err = s.store.GetLocationByCommitment("test-commitment")
-	require.NoError(t, err)
-	require.NotNil(t, retrievedLocation)
-	require.Equal(t, location, retrievedLocation)
-
-	// Test non-existent commitment
-	_, err = s.store.GetLocationByCommitment("non-existent")
-	require.Error(t, err)
 }
 
 func (s *StoreTestSuite) TestThreadSafety() {
@@ -95,7 +86,7 @@ func (s *StoreTestSuite) TestThreadSafety() {
 	// Reader goroutine
 	go func() {
 		for range 100 {
-			s.store.GetLocation(5)
+			s.store.GetDALocation(5)
 			s.store.GetLastIndexedBlock()
 		}
 		done <- true

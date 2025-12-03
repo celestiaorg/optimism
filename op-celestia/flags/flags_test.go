@@ -36,7 +36,9 @@ func TestFlags_RequiredFlagsCheck(t *testing.T) {
 		"test",
 		"--start-l1-block", "1000",
 		"--batch-inbox-address", "0x6F54Ca6F6EdE96662024Ffd61BFd18f3f4e34DFf",
-		"--l1-eth-rpc", "http://localhost:8545",
+		"--l1-eth-rpc", "http://localhost:11111",
+		"--l2-eth-rpc", "http://localhost:22221",
+		"--op-node-rpc", "http://localhost:33331",
 	})
 	require.NoError(t, err)
 }

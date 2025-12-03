@@ -22,11 +22,12 @@ DA locations, and provides an RPC API to query L2 block locations.
 ### Required Flags
 - `--start-l1-block`: Starting L1 block number for indexing
 - `--batch-inbox-address`: Address of the batch inbox contract
-- `--l1-eth-rpc`: HTTP provider URL for L1 Ethereum
+- `--l1-eth-rpc`: HTTP provider URL for L1 Ethereum (Execution node)
 - `--l2-eth-rpc`: HTTP provider URL for L2 Ethereum
 - `--op-node-rpc`: HTTP provider URL for op-node (for verification)
 
 ### Optional Flags
+- `--l1-beacon-rpc`: HTTP provider URL for L1 Ethereum (Consensus Node) - required for `4844 blobs` on L1.
 - `--poll-interval`: Polling interval for new blocks (default: 12s)
 - `--network-timeout`: Timeout for network requests (default: 10s)
 - `--verify-parent-check`: Enable parent check verification in span batches (default: true)

@@ -40,7 +40,7 @@ type IndexerService struct {
 
 	IndexerConfig
 
-	L1Client       L1Client
+	L1Client       *combinedL1Client
 	L2Client       *sources.L2Client
 	OpNodeClient   dial.RollupClientInterface // optional
 	CelestiaClient *celestia.DAClient
@@ -139,7 +139,7 @@ func (is *IndexerService) initClients(ctx context.Context, cfg *CLIConfig) error
 		beaconClient = sources.NewL1BeaconClient(beaconHTTP, beaconCfg)
 		is.Log.Info("Initialized L1 beacon client", "url", cfg.L1BeaconRpc)
 	} else {
-		is.Log.Info("No L1 beacon URL configured; EIP-4844 blob DA batches will not be indexed")
+		is.Log.Warn("No L1 beacon URL configured; EIP-4844 blob DA batches will not be indexed")
 	}
 
 	// Combine EL + CL into a single L1Client implementation

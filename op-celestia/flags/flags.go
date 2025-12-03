@@ -37,11 +37,6 @@ var (
 		Usage:   "HTTP provider URL for L1 execution client (for reading batch inbox, calldata DA)",
 		EnvVars: prefixEnvVars("L1_ETH_RPC"),
 	}
-	L1BeaconRpcFlag = &cli.StringFlag{
-		Name:    "l1-beacon-rpc",
-		Usage:   "HTTP provider for L1 consensus (beacon) client (required for EIP-4844 blob DA)",
-		EnvVars: prefixEnvVars("L1_BEACON_RPC"),
-	}
 	L2EthRpcFlag = &cli.StringFlag{
 		Name:    "l2-eth-rpc",
 		Usage:   "HTTP provider URL for L2 (for mapping batches to L2 blocks)",
@@ -54,6 +49,12 @@ var (
 	}
 
 	// Optional flags
+	L1BeaconRpcFlag = &cli.StringFlag{
+		Name:    "l1-beacon-rpc",
+		Usage:   "HTTP provider for L1 consensus (beacon) client (required for EIP-4844 blob DA)",
+		Value:   "",
+		EnvVars: prefixEnvVars("L1_BEACON_RPC"),
+	}
 	PollIntervalFlag = &cli.DurationFlag{
 		Name:    "poll-interval",
 		Usage:   "Polling interval for checking new blocks",
@@ -102,12 +103,12 @@ var requiredFlags = []cli.Flag{
 	StartL1BlockFlag,
 	BatchInboxAddressFlag,
 	L1EthRpcFlag,
-	L1BeaconRpcFlag,
 	L2EthRpcFlag,
 	OpNodeRpcFlag,
 }
 
 var optionalFlags = []cli.Flag{
+	L1BeaconRpcFlag,
 	PollIntervalFlag,
 	NetworkTimeoutFlag,
 	VerifyParentCheckFlag,
