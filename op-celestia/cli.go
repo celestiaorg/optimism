@@ -12,6 +12,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	opservice "github.com/ethereum-optimism/optimism/op-service"
+	cliiface "github.com/ethereum-optimism/optimism/op-service/cliiface"
 )
 
 const (
@@ -218,7 +219,7 @@ func NewCLIConfig() CLIConfig {
 	}
 }
 
-func ReadCLIConfig(ctx *cli.Context) CLIConfig {
+func ReadCLIConfig(ctx cliiface.Context) CLIConfig {
 	return CLIConfig{
 		Rpc:          ctx.String(RPCFlagName),
 		TLSEnabled:   ctx.Bool(TLSEnabledFlagName),
