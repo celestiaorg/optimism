@@ -308,7 +308,7 @@ func (d *IndexerDriver) processBatchTransaction(tx *types.Transaction, blockNum 
 		commitmentType := data[1]
 		daLayer := data[2]
 
-		// We ONLY support Celestia: commitment_type=0x01 (da-service) + da_layer=0x0c) (celestia)
+		// We ONLY support Celestia
 		if commitmentType == 0x01 && daLayer == 0x0c {
 			if len(data) < 43 { // 3 bytes header + 8 bytes height + 32 bytes commitment
 				return fmt.Errorf("invalid OP Stack Celestia commitment length: %d", len(data))
