@@ -39,7 +39,7 @@ func GetAPI(api *IndexerAPI) gethrpc.API {
 
 // GetDALocationResponse represents the response for getDALocation
 type GetDALocationResponse struct {
-	Type string      `json:"type"` // "celestia" or "ethereum"
+	Type string      `json:"type"` // "celestia" or "ethereum plain calldata" or "ethereum EIP4844 blobs"
 	Data interface{} `json:"data"` // CelestiaLocation or EthereumLocation
 }
 
@@ -80,7 +80,7 @@ func (api *IndexerAPI) GetIndexerStatus(ctx context.Context) (*IndexerStatusResp
 	return response, nil
 }
 
-// GetDALocation returns the DA location (either Celestia or Ethereum) for a given L2 block number
+// GetDALocation returns the DA location (either Celestia or Ethereum plain calldata, or Ethereum EIP4844 blobs) for a given L2 block number
 //
 // This method provides a generic endpoint that works with both DA types:
 //
@@ -113,7 +113,7 @@ func (api *IndexerAPI) GetIndexerStatus(ctx context.Context) (*IndexerStatusResp
 //	  "jsonrpc": "2.0",
 //	  "id": 1,
 //	  "result": {
-//	    "type": "ethereum",
+//	    "type": "ethereum plain calldata",
 //	    "data": {
 //	      "tx_hash": "0x123...",
 //	      "l2_range": {

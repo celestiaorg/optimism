@@ -84,7 +84,7 @@ Response for Ethereum DA:
   "jsonrpc": "2.0",
   "id": 1,
   "result": {
-    "type": "ethereum",
+    "type": "ethereum plain calldata",
     "data": {
       "tx_hash": "0x123...",
       "l2_range": {

@@ -663,6 +663,7 @@ func (d *IndexerDriver) processBlobDABatch(tx *types.Transaction, blockNum uint6
 	// Store the ETH DA location same as calldata-based batches.
 	location := &store.EthereumLocation{
 		TxHash:  tx.Hash().Hex(),
+		IsBlob:  true,
 		L2Range: *l2Range,
 		L1Block: blockNum,
 	}
@@ -689,7 +690,7 @@ func (d *IndexerDriver) processBlobDABatch(tx *types.Transaction, blockNum uint6
 	return nil
 }
 
-// processEthDABatch processes ETH DA batches
+// processEthDABatch processes ETH DA batches, calldata only
 func (d *IndexerDriver) processEthDABatch(tx *types.Transaction, blockNum uint64) error {
 	// Parse frames directly from calldata
 	frames, err := derive.ParseFrames(tx.Data())
@@ -710,6 +711,7 @@ func (d *IndexerDriver) processEthDABatch(tx *types.Transaction, blockNum uint64
 	// Store the ETH DA location
 	location := &store.EthereumLocation{
 		TxHash:  tx.Hash().Hex(),
+		IsBlob:  false,
 		L2Range: *l2Range,
 		L1Block: blockNum,
 	}

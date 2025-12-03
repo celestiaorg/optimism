@@ -49,6 +49,7 @@ type CelestiaLocation struct {
 // EthereumLocation represents the location of L2 blocks on Ethereum DA (standard calldata)
 type EthereumLocation struct {
 	TxHash  string  `json:"tx_hash"`
+	IsBlob  bool    `json:"is_blob"`
 	L2Range L2Range `json:"l2_range"`
 	L1Block uint64  `json:"l1_block"`
 }
@@ -74,7 +75,10 @@ func (c *CelestiaLocation) GetL1Block() uint64 {
 
 // Implement DALocation interface for EthereumLocation
 func (e *EthereumLocation) GetType() string {
-	return "ethereum"
+	if e.IsBlob {
+		return "ethereum EIP4844 blobs"
+	}
+	return "ethereum plain calldata"
 }
 
 func (e *EthereumLocation) GetL2Range() L2Range {
