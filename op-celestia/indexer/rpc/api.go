@@ -39,8 +39,8 @@ func GetAPI(api *IndexerAPI) gethrpc.API {
 
 // GetDALocationResponse represents the response for getDALocation
 type GetDALocationResponse struct {
-	Type string      `json:"type"` // "celestia" or "ethereum plain calldata" or "ethereum EIP4844 blobs"
-	Data interface{} `json:"data"` // CelestiaLocation or EthereumLocation
+	Type string `json:"type"` // "celestia" or "ethereum plain calldata" or "ethereum EIP4844 blobs"
+	Data any    `json:"data"` // CelestiaLocation or EthereumLocation
 }
 
 // GetIndexerStatus returns the current status of the indexer (useful for debugging)

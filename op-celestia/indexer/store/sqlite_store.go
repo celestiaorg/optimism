@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 
 	_ "modernc.org/sqlite"
@@ -68,18 +69,24 @@ func (s *SqliteStore) initTables() error {
 		return err
 	}
 
-	// Create eth_locations table for ETH DA
+	// eth_locations (calldata OR EIP4844 blobs)
 	_, err = s.db.Exec(`
 		CREATE TABLE IF NOT EXISTS eth_locations (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			tx_hash TEXT UNIQUE,
 			l2_start INTEGER,
 			l2_end INTEGER,
-			l1_block INTEGER
+			l1_block INTEGER,
+			blob_hashes TEXT
 		)
 	`)
 	if err != nil {
 		return err
+	}
+
+	// Migration: add blob_hashes if missing
+	_, err = s.db.Exec(`ALTER TABLE eth_locations ADD COLUMN blob_hashes TEXT`)
+	if err != nil && !strings.Contains(err.Error(), "duplicate column name") {
 	}
 
 	// Create l2_block_mappings table with da_type column
@@ -279,7 +286,7 @@ func (s *SqliteStore) GetDALocation(l2BlockNum uint64) (DALocation, error) {
 	err := s.db.QueryRow(`
 		SELECT da_type, location_id FROM l2_block_mappings WHERE l2_block_num = ?
 	`, l2BlockNum).Scan(&daType, &locationID)
-	
+
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("location not found for block %d", l2BlockNum)
 	}
@@ -303,7 +310,8 @@ func (s *SqliteStore) GetDALocation(l2BlockNum uint64) (DALocation, error) {
 		}
 		location.L2Range = L2Range{Start: start, End: end}
 		return &location, nil
-		
+
+	// TODO this can be "ethereum plain calldata" or "ethereum EIP4844 blobs" - want this to match anything "ethereum ***"
 	case "ethereum":
 		var location EthereumLocation
 		var start, end uint64
@@ -319,7 +327,7 @@ func (s *SqliteStore) GetDALocation(l2BlockNum uint64) (DALocation, error) {
 		}
 		location.L2Range = L2Range{Start: start, End: end}
 		return &location, nil
-		
+
 	default:
 		return nil, fmt.Errorf("unknown DA type: %s", daType)
 	}
@@ -345,7 +353,7 @@ func (s *SqliteStore) GetL2BlockRange() (min uint64, max uint64, err error) {
 	err = s.db.QueryRow(`
 		SELECT MIN(l2_block_num), MAX(l2_block_num) FROM l2_block_mappings
 	`).Scan(&min, &max)
-	
+
 	// Handle case where there are no blocks indexed
 	if err != nil {
 		// Check if it's because the table is empty
@@ -356,7 +364,7 @@ func (s *SqliteStore) GetL2BlockRange() (min uint64, max uint64, err error) {
 		}
 		return 0, 0, err
 	}
-	
+
 	return min, max, nil
 }
 

@@ -129,6 +129,6 @@ func (id L2BlockRef) ParentID() BlockID {
 // index helps us avoid unnecessary blob to blob hash conversions to find the right content in a
 // sidecar.
 type IndexedBlobHash struct {
-	Index uint64      // absolute index in the block, a.k.a. position in sidecar blobs array
-	Hash  common.Hash // hash of the blob, used for consistency checks
+	Index uint64      `json:"index"` // absolute index in the block, a.k.a. position in sidecar blobs array
+	Hash  common.Hash `json:"hash"`  // hash of the blob, used for consistency checks
 }

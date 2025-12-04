@@ -1,5 +1,7 @@
 package store
 
+import "github.com/ethereum-optimism/optimism/op-service/eth"
+
 // Store defines the interface for L2 block -> DA location storage
 // Can be implemented by in-memory storage or database-backed storage
 type Store interface {
@@ -46,12 +48,12 @@ type CelestiaLocation struct {
 	L1Block    uint64  `json:"l1_block"`
 }
 
-// EthereumLocation represents the location of L2 blocks on Ethereum DA (standard calldata)
+// EthereumLocation represents the location of L2 blocks on Ethereum DA (blobs if BobHashes != nil, calldata otherwise)
 type EthereumLocation struct {
-	TxHash  string  `json:"tx_hash"`
-	IsBlob  bool    `json:"is_blob"`
-	L2Range L2Range `json:"l2_range"`
-	L1Block uint64  `json:"l1_block"`
+	TxHash     string                `json:"tx_hash"`
+	L2Range    L2Range               `json:"l2_range"`
+	L1Block    uint64                `json:"l1_block"`
+	BlobHashes []eth.IndexedBlobHash `json:"blob_hashes,omitempty"`
 }
 
 // L2Range represents a range of L2 block numbers

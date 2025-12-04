@@ -660,12 +660,12 @@ func (d *IndexerDriver) processBlobDABatch(tx *types.Transaction, blockNum uint6
 		return fmt.Errorf("failed to extract L2 range from blob DA: %w", err)
 	}
 
-	// Store the ETH DA location same as calldata-based batches.
+	// Store the ETH DA location (blob-backed).
 	location := &store.EthereumLocation{
-		TxHash:  tx.Hash().Hex(),
-		IsBlob:  true,
-		L2Range: *l2Range,
-		L1Block: blockNum,
+		TxHash:     tx.Hash().Hex(),
+		L2Range:    *l2Range,
+		L1Block:    header.Number.Uint64(),
+		BlobHashes: indexed,
 	}
 
 	if err := d.Store.StoreEthLocation(location); err != nil {
@@ -677,7 +677,7 @@ func (d *IndexerDriver) processBlobDABatch(tx *types.Transaction, blockNum uint6
 		"tx_hash", location.TxHash,
 		"l2_start", l2Range.Start,
 		"l2_end", l2Range.End,
-		"l1_block", blockNum,
+		"l1_block", location.L1Block,
 		"blob_count", len(blobs),
 	)
 
@@ -710,10 +710,10 @@ func (d *IndexerDriver) processEthDABatch(tx *types.Transaction, blockNum uint64
 
 	// Store the ETH DA location
 	location := &store.EthereumLocation{
-		TxHash:  tx.Hash().Hex(),
-		IsBlob:  false,
-		L2Range: *l2Range,
-		L1Block: blockNum,
+		TxHash:     tx.Hash().Hex(),
+		L2Range:    *l2Range,
+		L1Block:    blockNum,
+		BlobHashes: nil,
 	}
 
 	err = d.Store.StoreEthLocation(location)
