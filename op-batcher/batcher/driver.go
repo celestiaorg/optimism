@@ -931,7 +931,13 @@ func (l *BatchSubmitter) cancelBlockingTx(queue *txmgr.Queue[txRef], receiptsCh 
 // publishToAltDA posts the txdata to the DA Provider and then sends the commitment to the commitmentsCh.
 func (l *BatchSubmitter) publishToAltDA(txdata txData, daGroup *errgroup.Group, commitmentsCh chan commitmentPayloadChan) {
 	// sanity checks
-	if nf := len(txdata.frames); nf != 1 {
+	_, isPectra, err := l.l1Tip(context.Background())
+	if err != nil {
+		l.Log.Error("Failed to query L1 tip", "err", err)
+		return
+	}
+	_, params := l.throttleController.Load()
+	if nf := len(txdata.frames); nf > l.ChannelConfig.ChannelConfig(isPectra, params.IsThrottling()).TargetNumFrames {
 		l.Log.Crit("Unexpected number of frames in calldata tx", "num_frames", nf)
 	}
 	if txdata.asBlob {
