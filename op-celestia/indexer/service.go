@@ -134,7 +134,7 @@ func (is *IndexerService) initClients(ctx context.Context, cfg *CLIConfig) error
 		httpCl := client.NewBasicHTTPClient(cfg.L1BeaconRpc, is.Log)
 		beaconHTTP := sources.NewBeaconHTTPClient(httpCl)
 		beaconCfg := sources.L1BeaconClientConfig{
-			FetchAllSidecars: true,
+			FetchAllSidecars: false, // TODO: https://ethereum.github.io/beacon-APIs/#/Beacon/getBlobSidecars is depricated, so we don't want this?
 		}
 		beaconClient = sources.NewL1BeaconClient(beaconHTTP, beaconCfg)
 		is.Log.Info("Initialized L1 beacon client", "url", cfg.L1BeaconRpc)

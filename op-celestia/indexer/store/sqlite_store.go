@@ -226,12 +226,23 @@ func (s *SqliteStore) StoreEthLocation(location *EthereumLocation) error {
 	}
 	defer tx.Rollback()
 
+	// Encode blob hashes if present
+	var blobHashesJSON sql.NullString
+	if location.BlobHashes != nil {
+		data, err := json.Marshal(location.BlobHashes)
+		if err != nil {
+			return fmt.Errorf("failed to marshal blob hashes: %w", err)
+		}
+		blobHashesJSON.Valid = true
+		blobHashesJSON.String = string(data)
+	}
+
 	// Insert the location
 	result, err := tx.Exec(`
 		INSERT OR IGNORE INTO eth_locations
-		(tx_hash, l2_start, l2_end, l1_block)
-		VALUES (?, ?, ?, ?)
-	`, location.TxHash, location.L2Range.Start, location.L2Range.End, location.L1Block)
+		(tx_hash, l2_start, l2_end, l1_block, blob_hashes)
+		VALUES (?, ?, ?, ?, ?)
+	`, location.TxHash, location.L2Range.Start, location.L2Range.End, location.L1Block, blobHashesJSON)
 	if err != nil {
 		return err
 	}
@@ -255,10 +266,16 @@ func (s *SqliteStore) StoreEthLocation(location *EthereumLocation) error {
 		}
 	}
 
+	// Decide DA type based on whether we *intend* blobs or calldata
+	daType := "eth-calldata"
+	if location.BlobHashes != nil {
+		daType = "eth-blobs"
+	}
+
 	// Store mapping for each L2 block in the range
 	stmt, err := tx.Prepare(`
 		INSERT OR REPLACE INTO l2_block_mappings (l2_block_num, location_id, da_type)
-		VALUES (?, ?, 'ethereum')
+		VALUES (?, ?, ?)
 	`)
 	if err != nil {
 		return err
@@ -266,7 +283,7 @@ func (s *SqliteStore) StoreEthLocation(location *EthereumLocation) error {
 	defer stmt.Close()
 
 	for blockNum := location.L2Range.Start; blockNum <= location.L2Range.End; blockNum++ {
-		_, err = stmt.Exec(blockNum, locationID)
+		_, err = stmt.Exec(blockNum, locationID, daType)
 		if err != nil {
 			return err
 		}
@@ -311,21 +328,34 @@ func (s *SqliteStore) GetDALocation(l2BlockNum uint64) (DALocation, error) {
 		location.L2Range = L2Range{Start: start, End: end}
 		return &location, nil
 
-	// TODO this can be "ethereum plain calldata" or "ethereum EIP4844 blobs" - want this to match anything "ethereum ***"
-	case "ethereum":
+	case "eth-calldata", "eth-blobs":
 		var location EthereumLocation
 		var start, end uint64
+		var blobHashesJSON sql.NullString
+
 		err = s.db.QueryRow(`
-			SELECT tx_hash, l2_start, l2_end, l1_block
-			FROM eth_locations WHERE id = ?
-		`, locationID).Scan(
+		SELECT tx_hash, l2_start, l2_end, l1_block, blob_hashes
+		FROM eth_locations WHERE id = ?
+	`, locationID).Scan(
 			&location.TxHash,
 			&start, &end, &location.L1Block,
+			&blobHashesJSON,
 		)
 		if err != nil {
 			return nil, err
 		}
+
 		location.L2Range = L2Range{Start: start, End: end}
+
+		// Decode blob_hashes if present.
+		// NULL => BlobHashes stays nil (calldata)
+		// "[]" => non-nil empty slice (blobs, but empty list)
+		if blobHashesJSON.Valid {
+			if err := json.Unmarshal([]byte(blobHashesJSON.String), &location.BlobHashes); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal blob_hashes for location %d: %w", locationID, err)
+			}
+		}
+
 		return &location, nil
 
 	default:
