@@ -107,22 +107,23 @@ func (s *MemoryStore) GetDALocation(l2BlockNum uint64) (DALocation, error) {
 			return nil, fmt.Errorf("celestia location not found for block %d", l2BlockNum)
 		}
 		return location, nil
+
 	case "ethereum":
 		location, exists := s.l2BlockToEthLocation[l2BlockNum]
 		if !exists {
 			return nil, fmt.Errorf("ethereum location not found for block %d", l2BlockNum)
 		}
 		return location, nil
+
 	default:
 		return nil, fmt.Errorf("unknown DA type: %s", daType)
 	}
 }
 
-// GetIndexedBlockCount returns the number of indexed L2 blocks
+// GetIndexedBlockCount returns the number of indexed L2 blocks on all DA providers
 func (s *MemoryStore) GetIndexedBlockCount() (int, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	// Return total count of indexed blocks across both DA types
 	return len(s.l2BlockDAType), nil
 }
 
@@ -175,10 +176,10 @@ func (s *MemoryStore) String() string {
 	defer s.mu.RUnlock()
 
 	state := map[string]any{
-		"last_indexed_block":      s.lastIndexedBlock,
-		"total_indexed_blocks":    len(s.l2BlockDAType),
-		"celestia_blocks":         len(s.l2BlockToLocation),
-		"ethereum_blocks":         len(s.l2BlockToEthLocation),
+		"last_indexed_block":        s.lastIndexedBlock,
+		"total_indexed_blocks":      len(s.l2BlockDAType),
+		"celestia_blocks":           len(s.l2BlockToLocation),
+		"ethereum_blocks":           len(s.l2BlockToEthLocation),
 		"unique_celestia_locations": len(s.commitmentToLocation),
 		"unique_eth_locations":      len(s.txHashToLocation),
 	}

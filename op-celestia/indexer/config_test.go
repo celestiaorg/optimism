@@ -17,6 +17,7 @@ func validCLIConfig() *CLIConfig {
 		StartL1Block:      1000,
 		BatchInboxAddress: "0x6F54Ca6F6EdE96662024Ffd61BFd18f3f4e34DFf",
 		L1EthRpc:          "http://localhost:8545",
+		L1BeaconRpc:       "http://localhost:8545",
 		L2EthRpc:          "http://localhost:9545",
 		OpNodeRpc:         "http://localhost:8547",
 		PollInterval:      12 * time.Second,

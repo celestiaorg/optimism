@@ -32,14 +32,14 @@ type CLIConfig struct {
 	// (required for calldata DA)
 	L1EthRpc string
 
-	// L1BeaconRpc is the HTTP endpoint of the L1 *consensus* (AKA beacon) client
-	// (required for EIP4844 blob DA)
-	L1BeaconRpc string
-
 	// L2EthRpc is the HTTP provider URL for L2
 	L2EthRpc string
 
 	/* Optional Params */
+
+	// L1BeaconRpc is the HTTP endpoint of the L1 *consensus* (AKA beacon) client
+	// (required for EIP4844 blob DA)
+	L1BeaconRpc string
 
 	// OpNodeRpc is the HTTP provider URL for op-node (optional, for verification)
 	OpNodeRpc string
