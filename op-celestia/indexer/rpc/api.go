@@ -9,19 +9,17 @@ import (
 	gethrpc "github.com/ethereum/go-ethereum/rpc"
 )
 
-// IndexerAPI provides RPC methods for the Celestia indexer
+// IndexerAPI provides RPC methods for the Celestia/Ethereum DA indexer.
 type IndexerAPI struct {
 	log    log.Logger
 	driver IndexerDriver
 }
 
-// IndexerDriver interface for the indexer operations
 type IndexerDriver interface {
 	GetDALocation(l2BlockNum uint64) (store.DALocation, error)
 	GetStatus() (lastIndexedBlock uint64, indexedBlocks int, running bool, l2Start uint64, l2End uint64, err error)
 }
 
-// NewIndexerAPI creates a new IndexerAPI instance
 func NewIndexerAPI(driver IndexerDriver, log log.Logger) *IndexerAPI {
 	return &IndexerAPI{
 		log:    log,
@@ -29,7 +27,7 @@ func NewIndexerAPI(driver IndexerDriver, log log.Logger) *IndexerAPI {
 	}
 }
 
-// GetAPI returns the RPC API descriptor
+// GetAPI returns the RPC API descriptor.
 func GetAPI(api *IndexerAPI) gethrpc.API {
 	return gethrpc.API{
 		Namespace: "admin",
@@ -37,13 +35,23 @@ func GetAPI(api *IndexerAPI) gethrpc.API {
 	}
 }
 
-// GetDALocationResponse represents the response for getDALocation
+// GetDALocationResponse represents the response for getDALocation.
+//
+// Type is a coarse DA backend identifier:
+//   - "celestia"  → data is a CelestiaLocation
+//   - "ethereum"  → data is an EthereumLocation
+//
+// For Ethereum:
+//
+//   - If data.blob_hashes is nil, the batch is calldata-backed.
+//   - If data.blob_hashes is non-nil (including an empty slice), the batch is blob-backed,
+//     and callers MUST ignore calldata per the [derivation spec](https://specs.optimism.io/protocol/ecotone/derivation.html#ecotone-blob-retrieval).
+
 type GetDALocationResponse struct {
-	Type string `json:"type"` // "celestia" or "eth-calldata" or "eth-blobs"
+	Type string `json:"type"` // "celestia" or "ethereum"
 	Data any    `json:"data"` // CelestiaLocation or EthereumLocation
 }
 
-// GetIndexerStatus returns the current status of the indexer (useful for debugging)
 type IndexerStatusResponse struct {
 	LastIndexedBlock uint64 `json:"last_indexed_block"`
 	IndexedBlocks    int    `json:"indexed_blocks"`
@@ -52,7 +60,6 @@ type IndexerStatusResponse struct {
 	L2EndBlock       uint64 `json:"l2_end_block"`
 }
 
-// GetIndexerStatus returns the current indexer status
 func (api *IndexerAPI) GetIndexerStatus(ctx context.Context) (*IndexerStatusResponse, error) {
 	api.log.Debug("GetIndexerStatus called")
 
@@ -80,15 +87,15 @@ func (api *IndexerAPI) GetIndexerStatus(ctx context.Context) (*IndexerStatusResp
 	return response, nil
 }
 
-// GetDALocation returns the DA location (either Celestia or Ethereum plain calldata, or Ethereum EIP4844 blobs) for a given L2 block number
+// GetDALocation returns the DA location for a given L2 block number.
 //
-// This method provides a generic endpoint that works with both DA types:
+// This method provides a generic endpoint that works with both Celestia and Ethereum DA.
 //
 //	curl -X POST -H "Content-Type: application/json" -s \
 //	  --data '{"jsonrpc":"2.0","method":"admin_getDALocation","params":[355],"id":1}' \
 //	  http://localhost:57220
 //
-// Response format for Celestia:
+// Celestia response:
 //
 //	{
 //	  "jsonrpc": "2.0",
@@ -107,39 +114,55 @@ func (api *IndexerAPI) GetIndexerStatus(ctx context.Context) (*IndexerStatusResp
 //	  }
 //	}
 //
-// Response format for Ethereum:
+// Ethereum response:
 //
 //	{
 //	  "jsonrpc": "2.0",
 //	  "id": 1,
 //	  "result": {
-//	    "type": "ethereum plain calldata",
+//	    "type": "ethereum",
 //	    "data": {
 //	      "tx_hash": "0x123...",
 //	      "l2_range": {
 //	        "start": 354,
 //	        "end": 359
 //	      },
-//	      "l1_block": 12345
+//	      "l1_block": 12345,
+//	      "blob_hashes": [
+//	        {
+//	          "index": 0,
+//	          "hash": "0xabcde..."
+//	        },
+//	        {
+//	          "index": 1,
+//	          "hash": "0xf00ba4..."
+//	        }
+//	      ]
 //	    }
 //	  }
 //	}
+//
+// Notes:
+//   - If "blob_hashes" is present (even empty array) -> blob-backed batch.
+//   - If "blob_hashes" is null or omitted -> calldata-backed batch.
 func (api *IndexerAPI) GetDALocation(ctx context.Context, l2BlockNumber uint64) (*GetDALocationResponse, error) {
 	api.log.Debug("GetDALocation called", "l2_block", l2BlockNumber)
 
-	// Validate input
+	// Validate input.
 	if l2BlockNumber == 0 {
 		return nil, fmt.Errorf("L2 block number must be greater than 0")
 	}
 
-	// Get location from driver
+	// Get location from driver.
 	location, err := api.driver.GetDALocation(l2BlockNumber)
 	if err != nil {
 		api.log.Warn("Failed to get DA location", "l2_block", l2BlockNumber, "err", err)
 		return nil, fmt.Errorf("failed to get DA location for L2 block %d: %w", l2BlockNumber, err)
 	}
 
-	// Build response based on type
+	// Build response based on type. We rely on the DALocation implementation to return
+	// a coarse type string, e.g. "celestia" or "ethereum". Blob vs calldata for
+	// Ethereum is determined by inspecting the concrete EthereumLocation (blob_hashes).
 	response := &GetDALocationResponse{
 		Type: location.GetType(),
 		Data: location,

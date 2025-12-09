@@ -94,7 +94,7 @@ func (s *SqliteStore) initTables() error {
 		CREATE TABLE IF NOT EXISTS l2_block_mappings (
 			l2_block_num INTEGER PRIMARY KEY,
 			location_id INTEGER,
-			da_type TEXT DEFAULT 'celestia',
+			da_type TEXT DEFAULT 'unset',
 			FOREIGN KEY (location_id) REFERENCES celestia_locations(id)
 		)
 	`)
@@ -226,7 +226,7 @@ func (s *SqliteStore) StoreEthLocation(location *EthereumLocation) error {
 	}
 	defer tx.Rollback()
 
-	// Encode blob hashes if present
+	// Encode blob hashes if present (non-nil slice means "blob-backed", even if empty).
 	var blobHashesJSON sql.NullString
 	if location.BlobHashes != nil {
 		data, err := json.Marshal(location.BlobHashes)
@@ -237,7 +237,7 @@ func (s *SqliteStore) StoreEthLocation(location *EthereumLocation) error {
 		blobHashesJSON.String = string(data)
 	}
 
-	// Insert the location
+	// Insert the location (blob_hashes will be NULL for calldata-backed txs).
 	result, err := tx.Exec(`
 		INSERT OR IGNORE INTO eth_locations
 		(tx_hash, l2_start, l2_end, l1_block, blob_hashes)
@@ -266,16 +266,10 @@ func (s *SqliteStore) StoreEthLocation(location *EthereumLocation) error {
 		}
 	}
 
-	// Decide DA type based on whether we *intend* blobs or calldata
-	daType := "eth-calldata"
-	if location.BlobHashes != nil {
-		daType = "eth-blobs"
-	}
-
-	// Store mapping for each L2 block in the range
+	// da_type at mapping level is *only* "ethereum" vs "celestia".
 	stmt, err := tx.Prepare(`
 		INSERT OR REPLACE INTO l2_block_mappings (l2_block_num, location_id, da_type)
-		VALUES (?, ?, ?)
+		VALUES (?, ?, 'ethereum')
 	`)
 	if err != nil {
 		return err
@@ -283,8 +277,7 @@ func (s *SqliteStore) StoreEthLocation(location *EthereumLocation) error {
 	defer stmt.Close()
 
 	for blockNum := location.L2Range.Start; blockNum <= location.L2Range.End; blockNum++ {
-		_, err = stmt.Exec(blockNum, locationID, daType)
-		if err != nil {
+		if _, err := stmt.Exec(blockNum, locationID); err != nil {
 			return err
 		}
 	}
@@ -297,13 +290,11 @@ func (s *SqliteStore) GetDALocation(l2BlockNum uint64) (DALocation, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	// First, check the da_type in l2_block_mappings
 	var daType string
 	var locationID int64
 	err := s.db.QueryRow(`
 		SELECT da_type, location_id FROM l2_block_mappings WHERE l2_block_num = ?
 	`, l2BlockNum).Scan(&daType, &locationID)
-
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("location not found for block %d", l2BlockNum)
 	}
@@ -315,6 +306,7 @@ func (s *SqliteStore) GetDALocation(l2BlockNum uint64) (DALocation, error) {
 	case "celestia":
 		var location CelestiaLocation
 		var start, end uint64
+
 		err = s.db.QueryRow(`
 			SELECT commitment, height, l2_start, l2_end, l1_block
 			FROM celestia_locations WHERE id = ?
@@ -325,18 +317,19 @@ func (s *SqliteStore) GetDALocation(l2BlockNum uint64) (DALocation, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		location.L2Range = L2Range{Start: start, End: end}
 		return &location, nil
 
-	case "eth-calldata", "eth-blobs":
+	case "ethereum":
 		var location EthereumLocation
 		var start, end uint64
 		var blobHashesJSON sql.NullString
 
 		err = s.db.QueryRow(`
-		SELECT tx_hash, l2_start, l2_end, l1_block, blob_hashes
-		FROM eth_locations WHERE id = ?
-	`, locationID).Scan(
+			SELECT tx_hash, l2_start, l2_end, l1_block, blob_hashes
+			FROM eth_locations WHERE id = ?
+		`, locationID).Scan(
 			&location.TxHash,
 			&start, &end, &location.L1Block,
 			&blobHashesJSON,
@@ -347,9 +340,7 @@ func (s *SqliteStore) GetDALocation(l2BlockNum uint64) (DALocation, error) {
 
 		location.L2Range = L2Range{Start: start, End: end}
 
-		// Decode blob_hashes if present.
-		// NULL => BlobHashes stays nil (calldata)
-		// "[]" => non-nil empty slice (blobs, but empty list)
+		// blob_hashes NULL  -> BlobHashes == nil  -> calldata
 		if blobHashesJSON.Valid {
 			if err := json.Unmarshal([]byte(blobHashesJSON.String), &location.BlobHashes); err != nil {
 				return nil, fmt.Errorf("failed to unmarshal blob_hashes for location %d: %w", locationID, err)

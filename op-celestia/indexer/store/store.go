@@ -75,12 +75,8 @@ func (c *CelestiaLocation) GetL1Block() uint64 {
 	return c.L1Block
 }
 
-// If blobs exist, it's all blobs, otherwise it's all calldata
 func (e *EthereumLocation) GetType() string {
-	if e.BlobHashes != nil {
-		return "eth-blobs"
-	}
-	return "eth-calldata"
+	return "ethereum"
 }
 
 func (e *EthereumLocation) GetL2Range() L2Range {
