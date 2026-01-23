@@ -104,7 +104,7 @@ Query the current indexer status:
 ```bash
 curl -X POST -H "Content-Type: application/json" -s \
   --data '{"jsonrpc":"2.0","method":"admin_getIndexerStatus","params":[],"id":1}' \
-  http://localhost:57220 | jq .
+  http://localhost:9999 | jq .
 ```
 
 ## Example Usage
@@ -112,18 +112,19 @@ curl -X POST -H "Content-Type: application/json" -s \
 Start the indexer service:
 
 ```bash
-op-celestia-indexer \
-  --start-l1-block 12000 \
-  --batch-inbox-address 0x00a4FE4C6AaA0729d7699c387E7f281DD64aFA2a \
-  --l1-eth-rpc  http://127.0.0.1:54049 \
-  --l2-eth-rpc http://127.0.0.1:54314 \
-  --op-node-rpc http://127.0.0.1:54328 \
+./op-celestia-indexer \
+  --rpc.port 9999 \
+  --start-l1-block 1 \
+  --batch-inbox-address 0x00e9bfcadbfb1f294e9a66bc0573878525f5015c \
+  --l1-eth-rpc  http://127.0.0.1:9545 \
+  --l1-beacon-rpc  http://127.0.0.1:9545 \
+  --l2-eth-rpc http://127.0.0.1:8545 \
+  --op-node-rpc http://127.0.0.1:7545 \
   --rpc.enable-admin \
   --db-path indexer.db \
   --log.level debug \
-  --da.rpc http://127.0.0.1:54300 \
-  --da.namespace 00000000000000000000000000000000000000000008e5f679bf7116cb  \
-  --da.auth_token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6WyJwdWJsaWMiLCJyZWFkIiwid3JpdGUiLCJhZG1pbiJdfQ.w8Jg1rSf4TqukE4Os35sXQQ1G9hO2BBYM_0lKHqEyo4
+  --da.rpc http://127.0.0.1:26658 \
+  --da.namespace 00000000000000000000000000000000000000000000006465766e6574
 
 ## Testing
 
