@@ -4,11 +4,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"math/big"
+	"net/http"
+	"net/url"
 	"slices"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -612,30 +616,39 @@ func (d *IndexerDriver) processBlobDABatch(tx *types.Transaction, blockNum uint6
 		Time:       header.Time,
 	}
 
-	// Fetch blobs via the L1Client (this wraps the beacon client under the hood).
-	blobs, err := d.L1Client.GetBlobs(ctx, ref, indexed)
+	// Pick a block_id. Using the L1 block hash is the most portable.
+	// Beacon APIs generally accept block_id as block root (0x...) or slot, etc.
+	blockID := ref.Hash.Hex()
+	if (ref.Hash == common.Hash{}) {
+		// Fallback if ref.Hash wasn't set for some reason
+		blockID = fmt.Sprintf("%d", ref.Number)
+	}
+
+	rawBlobs, err := fetchBeaconBlobs(ctx, d.Cfg.L1BeaconRpc, blockID, indexed, d.Cfg.NetworkTimeout)
 	if err != nil {
 		return fmt.Errorf("failed to fetch blobs for tx %s: %w", tx.Hash(), err)
 	}
-	if len(blobs) == 0 {
+
+	if len(rawBlobs) == 0 {
 		return fmt.Errorf("no blobs returned for tx %s", tx.Hash())
 	}
 
-	// Decode blobs into contiguous frame data
 	var buf bytes.Buffer
-	for i, b := range blobs {
+	for i, b := range rawBlobs {
 		if b == nil {
 			continue
 		}
-		data, err := b.ToData()
+
+		raw, err := b.ToData()
 		if err != nil {
 			d.Log.Warn("Failed to decode blob data", "tx", tx.Hash(), "blob_index", i, "err", err)
 			continue
 		}
-		if len(data) == 0 {
+		if len(raw) == 0 {
 			continue
 		}
-		if _, err := buf.Write(data); err != nil {
+
+		if _, err := buf.Write(raw); err != nil {
 			return fmt.Errorf("failed to concatenate blob data: %w", err)
 		}
 	}
@@ -678,7 +691,7 @@ func (d *IndexerDriver) processBlobDABatch(tx *types.Transaction, blockNum uint6
 		"l2_start", l2Range.Start,
 		"l2_end", l2Range.End,
 		"l1_block", location.L1Block,
-		"blob_count", len(blobs),
+		"blob_count", len(rawBlobs),
 	)
 
 	if d.OpNodeClient != nil {
@@ -749,4 +762,68 @@ func (d *IndexerDriver) getCurrentL1Head() (uint64, error) {
 	}
 
 	return header.Number.Uint64(), nil
+}
+
+// fetchBeaconBlobs calls:
+//
+//	GET {beaconRpc}/eth/v1/beacon/blobs/{block_id}?versioned_hashes=0x..&...
+//
+// and returns the decoded []*eth.Blob from eth.APIBeaconBlobsResponse.
+//
+// This avoids time->slot entirely and relies on OP's eth.Blob decoding via ToData().
+// Why? Anvil doesn't have the needed RPC endpoint
+func fetchBeaconBlobs(
+	ctx context.Context,
+	beaconRpc string,
+	blockID string,
+	hashes []eth.IndexedBlobHash,
+	timeout time.Duration,
+) ([]*eth.Blob, error) {
+	if beaconRpc == "" {
+		return nil, fmt.Errorf("empty beaconRpc")
+	}
+	beaconRpc = strings.TrimRight(beaconRpc, "/")
+
+	u, err := url.Parse(beaconRpc + "/eth/v1/beacon/blobs/" + url.PathEscape(blockID))
+	if err != nil {
+		return nil, fmt.Errorf("parse beacon url: %w", err)
+	}
+
+	q := u.Query()
+	for _, h := range hashes {
+		q.Add("versioned_hashes", h.Hash.Hex())
+	}
+	u.RawQuery = q.Encode()
+
+	cli := &http.Client{Timeout: timeout}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("new request: %w", err)
+	}
+
+	resp, err := cli.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("beacon GET: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, 25<<20)) // cap
+	if resp.StatusCode/100 != 2 {
+		return nil, fmt.Errorf("beacon blobs status=%d body=%s", resp.StatusCode, string(body))
+	}
+
+	var decoded eth.APIBeaconBlobsResponse
+	if err := json.Unmarshal(body, &decoded); err != nil {
+		return nil, fmt.Errorf("decode beacon blobs response: %w", err)
+	}
+
+	// Sanity checks (tune strictness if you want)
+	if len(hashes) > 0 && len(decoded.Data) == 0 {
+		return nil, fmt.Errorf("beacon returned 0 blobs for %d requested hashes (blockID=%s)", len(hashes), blockID)
+	}
+	if len(hashes) > 0 && len(decoded.Data) != len(hashes) {
+		return nil, fmt.Errorf("beacon returned %d blobs, expected %d (blockID=%s)", len(decoded.Data), len(hashes), blockID)
+	}
+
+	return decoded.Data, nil
 }

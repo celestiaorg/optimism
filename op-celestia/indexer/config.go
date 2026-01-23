@@ -123,6 +123,7 @@ type IndexerConfig struct {
 	StartL1Block      uint64
 	BatchInboxAddress common.Address
 	L1EthRpc          string
+	L1BeaconRpc       string
 	L2EthRpc          string
 	OpNodeRpc         string
 	PollInterval      time.Duration

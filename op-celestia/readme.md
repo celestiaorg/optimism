@@ -54,44 +54,54 @@ Query the DA location for a specific L2 block (works with both Celestia and Ethe
 
 ```bash
 curl -X POST -H "Content-Type: application/json" -s \
-  --data '{"jsonrpc":"2.0","method":"admin_getDALocation","params":[355],"id":1}' \
-  http://localhost:57220 | jq .
+  --data '{"jsonrpc":"2.0","method":"admin_getDALocation","params":[1],"id":1}' \
+  http://localhost:9999 | jq .
 ```
 
 Response for Celestia DA:
+```json
+
+```
+
+Response for Ethereum DA (calldata):
 ```json
 {
   "jsonrpc": "2.0",
   "id": 1,
   "result": {
-    "type": "celestia",
+    "type": "ethereum",
     "data": {
-      "height": 353,
-      "commitment": "YQEAAAAAAADg6goIrTykl5jyHlGz6Bl2tYTDYzffUY39g3inPvMGDQ==",
+      "tx_hash": "0xa32638f59abac6465c0860d961917156c748819f214f7847efbcb287b53c192a",
       "l2_range": {
-        "start": 354,
-        "end": 359
+        "start": 1,
+        "end": 60
       },
-      "l1_block": 12345
+      "l1_block": 123
     }
   }
 }
 ```
 
-Response for Ethereum DA:
+Response for Ethereum DA (EIP4844 blobs):
 ```json
 {
   "jsonrpc": "2.0",
   "id": 1,
   "result": {
-    "type": "ethereum plain calldata",
+    "type": "ethereum",
     "data": {
-      "tx_hash": "0x123...",
+      "tx_hash": "0xa8b448c9c99703d16bb885f1fb17f71a8792e0dc5f6031c3d89bdddba761a11c",
       "l2_range": {
-        "start": 354,
-        "end": 359
+        "start": 1,
+        "end": 69
       },
-      "l1_block": 12345
+      "l1_block": 123,
+      "blob_hashes": [
+        {
+          "index": 0,
+          "hash": "0x01c4a72eccab5e2ce66c98412e892d3d8902cb9f94df959fa7e90f3e3001607a"
+        }
+      ]
     }
   }
 }
