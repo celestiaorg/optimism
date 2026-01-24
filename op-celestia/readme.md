@@ -60,7 +60,22 @@ curl -X POST -H "Content-Type: application/json" -s \
 
 Response for Celestia DA:
 ```json
-
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "type": "celestia",
+    "data": {
+      "height": 12,
+      "commitment": "2Pnz/0Maaz8AaDRxpXFRvHarM+fZnC3gCVhaorI8L1I=",
+      "l2_range": {
+        "start": 1,
+        "end": 38
+      },
+      "l1_block": 122
+    }
+  }
+}
 ```
 
 Response for Ethereum DA (calldata):

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -294,12 +295,63 @@ func (d *IndexerDriver) processBatchTransaction(tx *types.Transaction, blockNum 
 		return nil
 	}
 
+	// Light per-tx trace to confirm we are looking at the right inbox txs.
+	d.Log.Debug("Inbox tx calldata",
+		"tx", tx.Hash(),
+		"l1_block", blockNum,
+		"len", len(data),
+		"first_byte", fmt.Sprintf("0x%02x", data[0]),
+	)
+
+	// NOTE: Celestia fork path.
+	// The Celestia-enabled batcher wraps a Celestia "id" in calldata as:
+	//   data = append([]byte{celestia.DerivationVersionCelestia}, id...)
+	// where id = celestia.MakeID(height, commitment).
+	// In practice on this devnet, height is encoded as LITTLE-ENDIAN uint64.
+	// This is NOT part of the Alt-DA v1 spec; it's a fork-specific derivation version.
+	if data[0] == celestia.DerivationVersionCelestia {
+		// Expect: version (1) + height (8) + commitment (32) = 41 bytes total.
+		if len(data) != 1+8+32 {
+			return fmt.Errorf("celestia derivation: unexpected calldata length: got %d want 41", len(data))
+		}
+
+		// payload/id layout: [height (8 bytes) || commitment (32 bytes)]
+		payload := data[1:]
+		heightBytes := payload[:8]
+		commitmentBytes := payload[8:]
+
+		// Height is LITTLE-ENDIAN in this fork encoding.
+		height := binary.LittleEndian.Uint64(heightBytes)
+		if height == 0 {
+			return fmt.Errorf("celestia derivation: decoded height=0 tx=%s", tx.Hash())
+		}
+
+		d.Log.Debug("Found Celestia derivation payload",
+			"tx", tx.Hash(),
+			"l1_block", blockNum,
+			"height", height,
+			"commitment_b64", base64.StdEncoding.EncodeToString(commitmentBytes),
+		)
+
+		// Info breadcrumb for operators (without dumping the full commitment)
+		d.Log.Info("Indexing Celestia DA commitment",
+			"tx", tx.Hash(),
+			"l1_block", blockNum,
+			"height", height,
+		)
+
+		// Fetch and parse frames from Celestia
+		return d.processCelestiaFrames(payload, blockNum)
+	}
+
 	// Check version byte to determine DA type
 	// See https://specs.optimism.io/experimental/alt-da.html#input-commitment-submission
 	switch data[0] {
 	case 0x00:
 		// rollup (Ethereum DA). Calldata carries frames.
 		d.Log.Debug("Found ETH DA batch", "tx", tx.Hash(), "l1_block", blockNum)
+		// NOTE: derive.ParseFrames expects derivation-format bytes, so this may fail
+		// if the calldata is not actually frames.
 		return d.processEthDABatch(tx, blockNum)
 
 	case 0x01:
@@ -330,6 +382,12 @@ func (d *IndexerDriver) processBatchTransaction(tx *types.Transaction, blockNum 
 				"l1_block", blockNum,
 			)
 
+			d.Log.Info("Indexing Alt-DA v1 Celestia commitment",
+				"tx", tx.Hash(),
+				"l1_block", blockNum,
+				"height", height,
+			)
+
 			// Fetch and parse frames from Celestia
 			return d.processCelestiaFrames(payload, blockNum)
 		}
@@ -339,7 +397,20 @@ func (d *IndexerDriver) processBatchTransaction(tx *types.Transaction, blockNum 
 
 	default:
 		// Unknown version byte — future format we explicitly don't handle.
-		return fmt.Errorf("unsupported batch tx version byte: 0x%02x", data[0])
+		//
+		// In practice, on devnets you may also see non-frame inbox calldata that
+		// isn't Alt-DA v1. We skip quietly at debug level to reduce noise.
+		if err := d.processEthDABatch(tx, blockNum); err != nil {
+			d.Log.Debug("Skipping inbox txdata (not Celestia derivation, not Alt-DA v1, not frames)",
+				"tx", tx.Hash(),
+				"l1_block", blockNum,
+				"first_byte", fmt.Sprintf("0x%02x", data[0]),
+				"err", err,
+			)
+			return nil
+		}
+		d.Log.Info("Indexed ETH DA calldata frames", "tx", tx.Hash(), "l1_block", blockNum, "calldata_len", len(data))
+		return nil
 	}
 }
 
