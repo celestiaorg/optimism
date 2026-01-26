@@ -4,11 +4,16 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"math/big"
+	"net/http"
+	"net/url"
 	"slices"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -290,12 +295,63 @@ func (d *IndexerDriver) processBatchTransaction(tx *types.Transaction, blockNum 
 		return nil
 	}
 
+	// Light per-tx trace to confirm we are looking at the right inbox txs.
+	d.Log.Debug("Inbox tx calldata",
+		"tx", tx.Hash(),
+		"l1_block", blockNum,
+		"len", len(data),
+		"first_byte", fmt.Sprintf("0x%02x", data[0]),
+	)
+
+	// NOTE: Celestia fork path.
+	// The Celestia-enabled batcher wraps a Celestia "id" in calldata as:
+	//   data = append([]byte{celestia.DerivationVersionCelestia}, id...)
+	// where id = celestia.MakeID(height, commitment).
+	// In practice on this devnet, height is encoded as LITTLE-ENDIAN uint64.
+	// This is NOT part of the Alt-DA v1 spec; it's a fork-specific derivation version.
+	if data[0] == celestia.DerivationVersionCelestia {
+		// Expect: version (1) + height (8) + commitment (32) = 41 bytes total.
+		if len(data) != 1+8+32 {
+			return fmt.Errorf("celestia derivation: unexpected calldata length: got %d want 41", len(data))
+		}
+
+		// payload/id layout: [height (8 bytes) || commitment (32 bytes)]
+		payload := data[1:]
+		heightBytes := payload[:8]
+		commitmentBytes := payload[8:]
+
+		// Height is LITTLE-ENDIAN in this fork encoding.
+		height := binary.LittleEndian.Uint64(heightBytes)
+		if height == 0 {
+			return fmt.Errorf("celestia derivation: decoded height=0 tx=%s", tx.Hash())
+		}
+
+		d.Log.Debug("Found Celestia derivation payload",
+			"tx", tx.Hash(),
+			"l1_block", blockNum,
+			"height", height,
+			"commitment_b64", base64.StdEncoding.EncodeToString(commitmentBytes),
+		)
+
+		// Info breadcrumb for operators (without dumping the full commitment)
+		d.Log.Info("Indexing Celestia DA commitment",
+			"tx", tx.Hash(),
+			"l1_block", blockNum,
+			"height", height,
+		)
+
+		// Fetch and parse frames from Celestia
+		return d.processCelestiaFrames(payload, blockNum)
+	}
+
 	// Check version byte to determine DA type
 	// See https://specs.optimism.io/experimental/alt-da.html#input-commitment-submission
 	switch data[0] {
 	case 0x00:
 		// rollup (Ethereum DA). Calldata carries frames.
 		d.Log.Debug("Found ETH DA batch", "tx", tx.Hash(), "l1_block", blockNum)
+		// NOTE: derive.ParseFrames expects derivation-format bytes, so this may fail
+		// if the calldata is not actually frames.
 		return d.processEthDABatch(tx, blockNum)
 
 	case 0x01:
@@ -326,6 +382,12 @@ func (d *IndexerDriver) processBatchTransaction(tx *types.Transaction, blockNum 
 				"l1_block", blockNum,
 			)
 
+			d.Log.Info("Indexing Alt-DA v1 Celestia commitment",
+				"tx", tx.Hash(),
+				"l1_block", blockNum,
+				"height", height,
+			)
+
 			// Fetch and parse frames from Celestia
 			return d.processCelestiaFrames(payload, blockNum)
 		}
@@ -335,7 +397,20 @@ func (d *IndexerDriver) processBatchTransaction(tx *types.Transaction, blockNum 
 
 	default:
 		// Unknown version byte — future format we explicitly don't handle.
-		return fmt.Errorf("unsupported batch tx version byte: 0x%02x", data[0])
+		//
+		// In practice, on devnets you may also see non-frame inbox calldata that
+		// isn't Alt-DA v1. We skip quietly at debug level to reduce noise.
+		if err := d.processEthDABatch(tx, blockNum); err != nil {
+			d.Log.Debug("Skipping inbox txdata (not Celestia derivation, not Alt-DA v1, not frames)",
+				"tx", tx.Hash(),
+				"l1_block", blockNum,
+				"first_byte", fmt.Sprintf("0x%02x", data[0]),
+				"err", err,
+			)
+			return nil
+		}
+		d.Log.Info("Indexed ETH DA calldata frames", "tx", tx.Hash(), "l1_block", blockNum, "calldata_len", len(data))
+		return nil
 	}
 }
 
@@ -612,30 +687,39 @@ func (d *IndexerDriver) processBlobDABatch(tx *types.Transaction, blockNum uint6
 		Time:       header.Time,
 	}
 
-	// Fetch blobs via the L1Client (this wraps the beacon client under the hood).
-	blobs, err := d.L1Client.GetBlobs(ctx, ref, indexed)
+	// Pick a block_id. Using the L1 block hash is the most portable.
+	// Beacon APIs generally accept block_id as block root (0x...) or slot, etc.
+	blockID := ref.Hash.Hex()
+	if (ref.Hash == common.Hash{}) {
+		// Fallback if ref.Hash wasn't set for some reason
+		blockID = fmt.Sprintf("%d", ref.Number)
+	}
+
+	rawBlobs, err := fetchBeaconBlobs(ctx, d.Cfg.L1BeaconRpc, blockID, indexed, d.Cfg.NetworkTimeout)
 	if err != nil {
 		return fmt.Errorf("failed to fetch blobs for tx %s: %w", tx.Hash(), err)
 	}
-	if len(blobs) == 0 {
+
+	if len(rawBlobs) == 0 {
 		return fmt.Errorf("no blobs returned for tx %s", tx.Hash())
 	}
 
-	// Decode blobs into contiguous frame data
 	var buf bytes.Buffer
-	for i, b := range blobs {
+	for i, b := range rawBlobs {
 		if b == nil {
 			continue
 		}
-		data, err := b.ToData()
+
+		raw, err := b.ToData()
 		if err != nil {
 			d.Log.Warn("Failed to decode blob data", "tx", tx.Hash(), "blob_index", i, "err", err)
 			continue
 		}
-		if len(data) == 0 {
+		if len(raw) == 0 {
 			continue
 		}
-		if _, err := buf.Write(data); err != nil {
+
+		if _, err := buf.Write(raw); err != nil {
 			return fmt.Errorf("failed to concatenate blob data: %w", err)
 		}
 	}
@@ -678,7 +762,7 @@ func (d *IndexerDriver) processBlobDABatch(tx *types.Transaction, blockNum uint6
 		"l2_start", l2Range.Start,
 		"l2_end", l2Range.End,
 		"l1_block", location.L1Block,
-		"blob_count", len(blobs),
+		"blob_count", len(rawBlobs),
 	)
 
 	if d.OpNodeClient != nil {
@@ -749,4 +833,68 @@ func (d *IndexerDriver) getCurrentL1Head() (uint64, error) {
 	}
 
 	return header.Number.Uint64(), nil
+}
+
+// fetchBeaconBlobs calls:
+//
+//	GET {beaconRpc}/eth/v1/beacon/blobs/{block_id}?versioned_hashes=0x..&...
+//
+// and returns the decoded []*eth.Blob from eth.APIBeaconBlobsResponse.
+//
+// This avoids time->slot entirely and relies on OP's eth.Blob decoding via ToData().
+// Why? Anvil doesn't have the needed RPC endpoint
+func fetchBeaconBlobs(
+	ctx context.Context,
+	beaconRpc string,
+	blockID string,
+	hashes []eth.IndexedBlobHash,
+	timeout time.Duration,
+) ([]*eth.Blob, error) {
+	if beaconRpc == "" {
+		return nil, fmt.Errorf("empty beaconRpc")
+	}
+	beaconRpc = strings.TrimRight(beaconRpc, "/")
+
+	u, err := url.Parse(beaconRpc + "/eth/v1/beacon/blobs/" + url.PathEscape(blockID))
+	if err != nil {
+		return nil, fmt.Errorf("parse beacon url: %w", err)
+	}
+
+	q := u.Query()
+	for _, h := range hashes {
+		q.Add("versioned_hashes", h.Hash.Hex())
+	}
+	u.RawQuery = q.Encode()
+
+	cli := &http.Client{Timeout: timeout}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("new request: %w", err)
+	}
+
+	resp, err := cli.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("beacon GET: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, _ := io.ReadAll(io.LimitReader(resp.Body, 25<<20)) // cap
+	if resp.StatusCode/100 != 2 {
+		return nil, fmt.Errorf("beacon blobs status=%d body=%s", resp.StatusCode, string(body))
+	}
+
+	var decoded eth.APIBeaconBlobsResponse
+	if err := json.Unmarshal(body, &decoded); err != nil {
+		return nil, fmt.Errorf("decode beacon blobs response: %w", err)
+	}
+
+	// Sanity checks (tune strictness if you want)
+	if len(hashes) > 0 && len(decoded.Data) == 0 {
+		return nil, fmt.Errorf("beacon returned 0 blobs for %d requested hashes (blockID=%s)", len(hashes), blockID)
+	}
+	if len(hashes) > 0 && len(decoded.Data) != len(hashes) {
+		return nil, fmt.Errorf("beacon returned %d blobs, expected %d (blockID=%s)", len(decoded.Data), len(hashes), blockID)
+	}
+
+	return decoded.Data, nil
 }

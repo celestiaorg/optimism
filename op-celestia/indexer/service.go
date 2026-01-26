@@ -111,6 +111,7 @@ func (is *IndexerService) initIndexerConfig(cfg *CLIConfig) {
 		StartL1Block:      cfg.StartL1Block,
 		BatchInboxAddress: common.HexToAddress(cfg.BatchInboxAddress),
 		L1EthRpc:          cfg.L1EthRpc,
+		L1BeaconRpc:       cfg.L1BeaconRpc,
 		OpNodeRpc:         cfg.OpNodeRpc,
 		PollInterval:      cfg.PollInterval,
 		NetworkTimeout:    cfg.NetworkTimeout,

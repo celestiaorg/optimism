@@ -54,8 +54,8 @@ Query the DA location for a specific L2 block (works with both Celestia and Ethe
 
 ```bash
 curl -X POST -H "Content-Type: application/json" -s \
-  --data '{"jsonrpc":"2.0","method":"admin_getDALocation","params":[355],"id":1}' \
-  http://localhost:57220 | jq .
+  --data '{"jsonrpc":"2.0","method":"admin_getDALocation","params":[1],"id":1}' \
+  http://localhost:9999 | jq .
 ```
 
 Response for Celestia DA:
@@ -66,32 +66,57 @@ Response for Celestia DA:
   "result": {
     "type": "celestia",
     "data": {
-      "height": 353,
-      "commitment": "YQEAAAAAAADg6goIrTykl5jyHlGz6Bl2tYTDYzffUY39g3inPvMGDQ==",
+      "height": 12,
+      "commitment": "2Pnz/0Maaz8AaDRxpXFRvHarM+fZnC3gCVhaorI8L1I=",
       "l2_range": {
-        "start": 354,
-        "end": 359
+        "start": 1,
+        "end": 38
       },
-      "l1_block": 12345
+      "l1_block": 122
     }
   }
 }
 ```
 
-Response for Ethereum DA:
+Response for Ethereum DA (calldata):
 ```json
 {
   "jsonrpc": "2.0",
   "id": 1,
   "result": {
-    "type": "ethereum plain calldata",
+    "type": "ethereum",
     "data": {
-      "tx_hash": "0x123...",
+      "tx_hash": "0xa32638f59abac6465c0860d961917156c748819f214f7847efbcb287b53c192a",
       "l2_range": {
-        "start": 354,
-        "end": 359
+        "start": 1,
+        "end": 60
       },
-      "l1_block": 12345
+      "l1_block": 123
+    }
+  }
+}
+```
+
+Response for Ethereum DA (EIP4844 blobs):
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "type": "ethereum",
+    "data": {
+      "tx_hash": "0xa8b448c9c99703d16bb885f1fb17f71a8792e0dc5f6031c3d89bdddba761a11c",
+      "l2_range": {
+        "start": 1,
+        "end": 69
+      },
+      "l1_block": 123,
+      "blob_hashes": [
+        {
+          "index": 0,
+          "hash": "0x01c4a72eccab5e2ce66c98412e892d3d8902cb9f94df959fa7e90f3e3001607a"
+        }
+      ]
     }
   }
 }
@@ -104,7 +129,7 @@ Query the current indexer status:
 ```bash
 curl -X POST -H "Content-Type: application/json" -s \
   --data '{"jsonrpc":"2.0","method":"admin_getIndexerStatus","params":[],"id":1}' \
-  http://localhost:57220 | jq .
+  http://localhost:9999 | jq .
 ```
 
 ## Example Usage
@@ -112,18 +137,19 @@ curl -X POST -H "Content-Type: application/json" -s \
 Start the indexer service:
 
 ```bash
-op-celestia-indexer \
-  --start-l1-block 12000 \
-  --batch-inbox-address 0x00a4FE4C6AaA0729d7699c387E7f281DD64aFA2a \
-  --l1-eth-rpc  http://127.0.0.1:54049 \
-  --l2-eth-rpc http://127.0.0.1:54314 \
-  --op-node-rpc http://127.0.0.1:54328 \
+./op-celestia-indexer \
+  --rpc.port 9999 \
+  --start-l1-block 1 \
+  --batch-inbox-address 0x00e9bfcadbfb1f294e9a66bc0573878525f5015c \
+  --l1-eth-rpc  http://127.0.0.1:9545 \
+  --l1-beacon-rpc  http://127.0.0.1:9545 \
+  --l2-eth-rpc http://127.0.0.1:8545 \
+  --op-node-rpc http://127.0.0.1:7545 \
   --rpc.enable-admin \
   --db-path indexer.db \
   --log.level debug \
-  --da.rpc http://127.0.0.1:54300 \
-  --da.namespace 00000000000000000000000000000000000000000008e5f679bf7116cb  \
-  --da.auth_token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6WyJwdWJsaWMiLCJyZWFkIiwid3JpdGUiLCJhZG1pbiJdfQ.w8Jg1rSf4TqukE4Os35sXQQ1G9hO2BBYM_0lKHqEyo4
+  --da.rpc http://127.0.0.1:26658 \
+  --da.namespace 00000000000000000000000000000000000000000000006465766e6574
 
 ## Testing
 

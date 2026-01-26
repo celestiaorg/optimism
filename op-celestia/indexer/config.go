@@ -123,6 +123,7 @@ type IndexerConfig struct {
 	StartL1Block      uint64
 	BatchInboxAddress common.Address
 	L1EthRpc          string
+	L1BeaconRpc       string
 	L2EthRpc          string
 	OpNodeRpc         string
 	PollInterval      time.Duration
@@ -143,6 +144,7 @@ func NewConfig(ctx *cli.Context) *CLIConfig {
 		StartL1Block:      ctx.Uint64(flags.StartL1BlockFlag.Name),
 		BatchInboxAddress: ctx.String(flags.BatchInboxAddressFlag.Name),
 		L1EthRpc:          ctx.String(flags.L1EthRpcFlag.Name),
+		L1BeaconRpc:       ctx.String(flags.L1BeaconRpcFlag.Name),
 		L2EthRpc:          ctx.String(flags.L2EthRpcFlag.Name),
 		OpNodeRpc:         ctx.String(flags.OpNodeRpcFlag.Name),
 		PollInterval:      ctx.Duration(flags.PollIntervalFlag.Name),
